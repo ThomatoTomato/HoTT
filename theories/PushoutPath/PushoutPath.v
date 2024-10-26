@@ -8,6 +8,7 @@ Require Import Colimits.Colimit.
 Require Import Colimits.Sequential.
 Require Import Diagram.
 Require Import Types.
+Require Import PushoutPath.Interleaving.
 
 (** * Work towards characterizing the path types in a pushout of a span [R : A -> B -> Type]. *)
 
@@ -47,8 +48,8 @@ Section InductiveStep.
 
   (** We define the homotopy showing that the composition of the two dot maps is iota. *)
   Definition homotopy_step : forall (a : A) (b : B) (r : R a b), 
-    (dot_step b a r) o (dot a b r) == (iota_step a) 
-    := fun a b r p => inverse (pglue ((b ; r) , p)).
+    (iota_step a) == (dot_step b a r) o (dot a b r) 
+    := fun a b r p => (pglue ((b ; r) , p)).
 End InductiveStep.
 
 Section Sequence.
@@ -58,17 +59,17 @@ Section Sequence.
   Record zigzag_type : Type := {
     Pp : A -> Type; (** Stored from previous step *)
     Qp : B -> Type; (** Stored from previous step *)
-    concatQPp (b : B) (a : A) (r : R a b) (q : Qp b) : Pp a; (** Stored from previous step *)
+    glueQPp (b : B) (a : A) (r : R a b) (q : Qp b) : Pp a; (** Stored from previous step *)
     Q : B -> Type; (** Paths of length t *)
-    concatPQ (a : A) (b : B) (r : R a b) (p : Pp a) : Q b; (** t-1 -> t *)
+    gluePQ (a : A) (b : B) (r : R a b) (p : Pp a) : Q b; (** t-1 -> t *)
     iotaQ (b : B) (x : Qp b) : Q b; (** t-2 -> t *)
     P : A -> Type; (** Paths of length t+1 *)
-    concatQP (b : B) (a : A) (r : R a b) (q : Q b) : P a; (** t -> t+1 *)
+    glueQP (b : B) (a : A) (r : R a b) (q : Q b) : P a; (** t -> t+1 *)
     iotaP (a : A) (x : Pp a) : P a; (** t-1 -> t+1 *)
-    concatQPQ (b : B) (a : A) (r : R a b) 
-      : (compose (concatPQ a b r) (concatQPp b a r)) == (iotaQ b);
-    concatPQP (a : A) (b : B) (r : R a b) 
-      : (compose (concatQP b a r) (concatPQ a b r)) == (iotaP a);
+    glueQPQ (b : B) (a : A) (r : R a b) 
+      : iotaQ b == (gluePQ a b r) o (glueQPp b a r);
+    gluePQP (a : A) (b : B) (r : R a b) 
+      : iotaP a == (glueQP b a r) o (gluePQ a b r);
   }.
 
   Definition zigzag_step : zigzag_type -> zigzag_type.
@@ -76,18 +77,18 @@ Section Sequence.
     intro z.
     destruct z.
     (* Naming them all seems to be necessary for Coq to not reorder goals. *)
-    snrapply (let Pp:=_ in let Qp :=_ in let concatQPp :=_ in let Q:=_ in let concatPQ:=_ in let iotaQ:=_ in let P:=_ in let concatQP:=_ in let iotaP:=_ in let concatQPQ:=_ in let concatPQP:=_ in Build_zigzag_type Pp Qp concatQPp Q concatPQ iotaQ P concatQP iotaP concatQPQ concatPQP).
+    snrapply (let Pp:=_ in let Qp :=_ in let glueQPp :=_ in let Q:=_ in let gluePQ:=_ in let iotaQ:=_ in let P:=_ in let glueQP:=_ in let iotaP:=_ in let glueQPQ:=_ in let gluePQP:=_ in Build_zigzag_type Pp Qp glueQPp Q gluePQ iotaQ P glueQP iotaP glueQPQ gluePQP).
     - exact P0.
     - exact Q0.
-    - exact concatQP0.
-    - exact (family_step (flip R) concatQP0).
-    - exact (dot_step (flip R) concatQP0).
-    - exact (iota_step (flip R) concatQP0).
-    - exact (family_step R concatPQ).
-    - exact (dot_step R concatPQ).
-    - exact (iota_step R concatPQ).
-    - exact (homotopy_step (flip R) concatQP0).
-    - exact (homotopy_step R concatPQ).
+    - exact glueQP0.
+    - exact (family_step (flip R) glueQP0).
+    - exact (dot_step (flip R) glueQP0).
+    - exact (iota_step (flip R) glueQP0).
+    - exact (family_step R gluePQ).
+    - exact (dot_step R gluePQ).
+    - exact (iota_step R gluePQ).
+    - exact (homotopy_step (flip R) glueQP0).
+    - exact (homotopy_step R gluePQ).
   Defined.
 
   Definition identity_zigzag_initial : zigzag_type.
@@ -109,7 +110,7 @@ Section Sequence.
   Definition identity_zigzag : nat -> zigzag_type
     := fun n => nat_iter n zigzag_step identity_zigzag_initial.
 
-  Definition identity_zigzag_P_seq : A -> Sequence.
+  Definition identity_zigzag_P : A -> Sequence.
   Proof.
     intro a.
     snrapply Build_Sequence.
@@ -117,7 +118,7 @@ Section Sequence.
     - intro n; exact ((identity_zigzag (S n)).(iotaP) a).
   Defined.
 
-  Definition identity_zigzag_Q_seq : B -> Sequence.
+  Definition identity_zigzag_Q : B -> Sequence.
   Proof.
     intro b.
     snrapply Build_Sequence.
@@ -125,53 +126,102 @@ Section Sequence.
     - intro n; exact ((identity_zigzag (S n)).(iotaQ) b).
   Defined.
 
-  Definition identity_zigzag_concatPQ_seq {a : A} {b : B} (r : R a b) 
-    : DiagramMap (identity_zigzag_P_seq a) (succ_seq (identity_zigzag_Q_seq b)).
-  Proof.
-    snrapply Build_DiagramMap.
-    - intro n; exact ((identity_zigzag (S n)).(concatPQ) a b r).
-    - intros n m g x.
-      destruct g.
-      transitivity ((identity_zigzag (S (S n))).(concatPQ) a b r ((identity_zigzag (S n)).(concatQP) b a r ((identity_zigzag (S n)).(concatPQ) a b r x))).
-      + symmetry.
-        exact ((identity_zigzag (S (S n))).(concatQPQ) b a r _).
-      + apply ap.
-        exact ((identity_zigzag (S n)).(concatPQP) a b r _).
-  Defined.
+  Let gluePQ {a : A} {b : B} (r : R a b) (n : nat)
+    : identity_zigzag_P a n -> identity_zigzag_Q b (S n)
+    := (identity_zigzag (S n)).(gluePQ) a b r.
 
-  Definition identity_zigzag_concatQP_seq {a : A} {b : B} (r : R a b) 
-    : DiagramMap (identity_zigzag_Q_seq b) (identity_zigzag_P_seq a).
-  Proof.
-    snrapply Build_DiagramMap.
-    - intro n; exact ((identity_zigzag n).(concatQP) b a r).
-    - intros n m g x.
-      destruct g.
-      transitivity ((identity_zigzag (S n)).(concatQP) b a r ((identity_zigzag (S n)).(concatPQ) a b r ((identity_zigzag n).(concatQP) b a r x))).
-      + symmetry.
-        exact ((identity_zigzag (S n)).(concatPQP) a b r _).
-      + apply ap.
-        exact ((identity_zigzag (S n)).(concatQPQ) b a r _).
-  Defined.
+  Let glueQP {a : A} {b : B} (r : R a b) (n : nat)
+    : identity_zigzag_Q b n -> identity_zigzag_P a n
+    := (identity_zigzag n).(glueQP) b a r.
 
-End Sequence.
+  Let gluePQP {a : A} {b : B} (r : R a b) (n : nat)
+    : (fun (x : identity_zigzag_P a n) => x^+) == glueQP r (S n) o gluePQ r n
+    := (identity_zigzag (S n)).(gluePQP) a b r.
 
-Section Colimit.
-  Context {A B : Type} (R : A -> B -> Type) (a0 : A).
+  Let glueQPQ {a : A} {b : B} (r : R a b) (n : nat)
+    : (fun (x : identity_zigzag_Q b n) => x^+) == gluePQ r n o glueQP r n
+    := (identity_zigzag (S n)).(glueQPQ) b a r.
 
-Definition identity_zigzag_Pinf (a : A) : Type := 
-  Colimit (identity_zigzag_P_seq R a0 a).
+  Definition identity_zigzag_gluePQ_seq {a : A} {b : B} (r : R a b) 
+    : DiagramMap (identity_zigzag_P a) (succ_seq (identity_zigzag_Q b))
+    := zigzag_glue_map_inv (glueQP r) (gluePQ r) (glueQPQ r) (gluePQP r).
 
-Definition identity_zigzag_Qinf (b : B) : Type :=
-  Colimit (identity_zigzag_Q_seq R a0 b).
+  Definition identity_zigzag_glueQP_seq {a : A} {b : B} (r : R a b) 
+    : DiagramMap (identity_zigzag_Q b) (identity_zigzag_P a)
+    := zigzag_glue_map (glueQP r) (gluePQ r) (glueQPQ r) (gluePQP r).
+
+  (** The colimit of paths starting and ending in A. *)
+  Definition identity_zigzag_Pinf (a : A) : Type
+    := Colimit (identity_zigzag_P a).
+
+  (** Our candidate for reflexivity: the colimit of reflexivity. *)
+  Definition identity_zigzag_refl : identity_zigzag_Pinf a0
+    := @colim _ (identity_zigzag_P a0) 0%nat idpath.
+
+  (** The colimit of paths starting in A and ending in B. *)
+  Definition identity_zigzag_Qinf (b : B) : Type 
+    := Colimit (identity_zigzag_Q b).
 
   Context {a : A} {b : B} (r : R a b) `{Funext}.
 
-Definition identity_zigzag_concatQPinf
-  : (identity_zigzag_Qinf b) -> (identity_zigzag_Pinf a)
-  := functor_colimit (identity_zigzag_concatQP_seq R a0 r) _ _.
+  (** The gluing equivalence. *)
+  Definition equiv_identity_zigzag_glueinf
+    : (identity_zigzag_Qinf b) <~> (identity_zigzag_Pinf a)
+    := equiv_interleaved_colim _ _ (glueQP r) (gluePQ r) (glueQPQ r) (gluePQP r).
 
-Definition identity_zigzag_concatPQinf 
-  : (identity_zigzag_Pinf a) -> (identity_zigzag_Qinf b)
-  := (colim_succ_seq_to_colim_seq _) o (functor_colimit (identity_zigzag_concatPQ_seq R a0 r) _ _ ).
+  Definition identity_zigzag_gluePQinf : identity_zigzag_Pinf a -> identity_zigzag_Qinf b
+    := (equiv_identity_zigzag_glueinf)^-1.
 
-End Colimit.
+  Definition identity_zigzag_glueQPinf : identity_zigzag_Qinf b -> identity_zigzag_Pinf a
+    := equiv_identity_zigzag_glueinf.
+End Sequence.
+
+Section ZigzagIdentity.
+  Context {A : Type} {B : Type} (R : A -> B -> Type).
+
+  Definition relation_total : Type
+    := {x : A * B | R (fst x) (snd x)}.
+
+  Definition relation_pushout : Type.
+  Proof.
+    snrapply Pushout.
+    + exact relation_total.
+    + exact A.
+    + exact B.
+    + exact (fst o pr1).
+    + exact (snd o pr1).
+  Defined.
+
+  (** The candidate for the identity type. *)
+  Context `{Univalence}.
+  Definition identity_zigzag_family_half (a0 : A) 
+    : relation_pushout -> Type.
+  Proof.
+    snrapply Pushout_rec.
+    + intro a; exact (identity_zigzag_Pinf R a0 a).
+    + intro b; exact (identity_zigzag_Qinf R a0 b).
+    + intros [[a b] r].
+      apply path_universe_uncurried.
+      symmetry.
+      exact (equiv_identity_zigzag_glueinf R a0 r).
+  Defined.
+
+  Context (a0 : A) 
+    (P : forall (a : A) (p : identity_zigzag_family_half a0 (pushl a)), Type)
+    (Q : forall (b : B) (q : identity_zigzag_family_half a0 (pushr b)), Type)
+    (r : P a0 (identity_zigzag_refl R a0))
+    (e : forall (a : A) (b : B) (r : R a b) (p : identity_zigzag_family_half a0 (pushl a)), P a p <~> Q b (identity_zigzag_gluePQinf R a0 r p)).
+
+  Fixpoint identity_zigzag_indL (a : A) (n : nat) : forall (p : identity_zigzag_P R a0 a n), P a (@colim _ (identity_zigzag_P R a0 a) n p) 
+    with identity_zigzag_indR (b : B) (n : nat) : forall (q : identity_zigzag_Q R a0 b n), Q b (@colim _ (identity_zigzag_Q R a0 b) n q).
+  Proof.
+    - induction n.
+      + intro p; destruct p.
+        exact r.
+      + snrapply Pushout_ind.
+        * simpl.
+          intro p'.
+
+        
+
+End ZigzagIdentity.
