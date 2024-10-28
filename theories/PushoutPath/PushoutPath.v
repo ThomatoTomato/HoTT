@@ -52,6 +52,21 @@ Section InductiveStep.
     := fun a b r p => (pglue ((b ; r) , p)).
 End InductiveStep.
 
+(** Original:
+Definition alternating_base (A B : Type) : nat -> Type * Type.
+Proof.
+  intro n.
+  induction n.
+  + exact (A , B).
+  + exact (snd IHn , fst IHn).
+Defined.
+
+Definition alternating (A B : Type) : nat -> Type
+  := fun n => fst (alternating_base A B n).
+
+Definition the_result ... (n : nat) : (alternating A B n) -> Type.
+*)
+
 Section Sequence.
   Context {A B : Type} (R : A -> B -> Type) (a0 : A).
 
@@ -126,29 +141,37 @@ Section Sequence.
     - intro n; exact ((identity_zigzag (S n)).(iotaQ) b).
   Defined.
 
-  Let gluePQ {a : A} {b : B} (r : R a b) (n : nat)
+  Definition identity_zigzag_iotaP (a : A) (n : nat)
+    : identity_zigzag_P a n -> identity_zigzag_P a (S n)
+    := (identity_zigzag (S n)).(iotaP) a.
+
+  Definition identity_zigzag_iotaQ (b : B) (n : nat)
+    : identity_zigzag_Q b n -> identity_zigzag_Q b (S n)
+    := (identity_zigzag (S n)).(iotaQ) b.
+
+  Definition identity_zigzag_gluePQ {a : A} {b : B} (r : R a b) (n : nat)
     : identity_zigzag_P a n -> identity_zigzag_Q b (S n)
     := (identity_zigzag (S n)).(gluePQ) a b r.
 
-  Let glueQP {a : A} {b : B} (r : R a b) (n : nat)
+  Definition identity_zigzag_glueQP {a : A} {b : B} (r : R a b) (n : nat)
     : identity_zigzag_Q b n -> identity_zigzag_P a n
     := (identity_zigzag n).(glueQP) b a r.
 
-  Let gluePQP {a : A} {b : B} (r : R a b) (n : nat)
-    : (fun (x : identity_zigzag_P a n) => x^+) == glueQP r (S n) o gluePQ r n
+  Definition identity_zigzag_gluePQP {a : A} {b : B} (r : R a b) (n : nat)
+    : (fun (x : identity_zigzag_P a n) => x^+) == identity_zigzag_glueQP r (S n) o identity_zigzag_gluePQ r n
     := (identity_zigzag (S n)).(gluePQP) a b r.
 
-  Let glueQPQ {a : A} {b : B} (r : R a b) (n : nat)
-    : (fun (x : identity_zigzag_Q b n) => x^+) == gluePQ r n o glueQP r n
+  Definition identity_zigzag_glueQPQ {a : A} {b : B} (r : R a b) (n : nat)
+    : (fun (x : identity_zigzag_Q b n) => x^+) == identity_zigzag_gluePQ r n o identity_zigzag_glueQP r n
     := (identity_zigzag (S n)).(glueQPQ) b a r.
 
   Definition identity_zigzag_gluePQ_seq {a : A} {b : B} (r : R a b) 
     : DiagramMap (identity_zigzag_P a) (succ_seq (identity_zigzag_Q b))
-    := zigzag_glue_map_inv (glueQP r) (gluePQ r) (glueQPQ r) (gluePQP r).
+    := zigzag_glue_map_inv (identity_zigzag_glueQP r) (identity_zigzag_gluePQ r) (identity_zigzag_glueQPQ r) (identity_zigzag_gluePQP r).
 
   Definition identity_zigzag_glueQP_seq {a : A} {b : B} (r : R a b) 
     : DiagramMap (identity_zigzag_Q b) (identity_zigzag_P a)
-    := zigzag_glue_map (glueQP r) (gluePQ r) (glueQPQ r) (gluePQP r).
+    := zigzag_glue_map (identity_zigzag_glueQP r) (identity_zigzag_gluePQ r) (identity_zigzag_glueQPQ r) (identity_zigzag_gluePQP r).
 
   (** The colimit of paths starting and ending in A. *)
   Definition identity_zigzag_Pinf (a : A) : Type
@@ -167,7 +190,7 @@ Section Sequence.
   (** The gluing equivalence. *)
   Definition equiv_identity_zigzag_glueinf
     : (identity_zigzag_Qinf b) <~> (identity_zigzag_Pinf a)
-    := equiv_interleaved_colim _ _ (glueQP r) (gluePQ r) (glueQPQ r) (gluePQP r).
+    := equiv_interleaved_colim _ _ (identity_zigzag_glueQP r) (identity_zigzag_gluePQ r) (identity_zigzag_glueQPQ r) (identity_zigzag_gluePQP r).
 
   Definition identity_zigzag_gluePQinf : identity_zigzag_Pinf a -> identity_zigzag_Qinf b
     := (equiv_identity_zigzag_glueinf)^-1.
@@ -212,16 +235,36 @@ Section ZigzagIdentity.
     (r : P a0 (identity_zigzag_refl R a0))
     (e : forall (a : A) (b : B) (r : R a b) (p : identity_zigzag_family_half a0 (pushl a)), P a p <~> Q b (identity_zigzag_gluePQinf R a0 r p)).
 
-  Fixpoint identity_zigzag_indL (a : A) (n : nat) : forall (p : identity_zigzag_P R a0 a n), P a (@colim _ (identity_zigzag_P R a0 a) n p) 
-    with identity_zigzag_indR (b : B) (n : nat) : forall (q : identity_zigzag_Q R a0 b n), Q b (@colim _ (identity_zigzag_Q R a0 b) n q).
+  Let e' (a : A) (b : B) (r' : R a b) (p : identity_zigzag_family_half a0 (pushl a)) : Q b (identity_zigzag_gluePQinf R a0 r' p) <~> P a p
+    := (e a b r' p)^-1.
+
+  Fixpoint identity_zigzag_indL (a : A) (n : nat) 
+    : forall (p : identity_zigzag_P R a0 a n), P a (@colim _ (identity_zigzag_P R a0 a) n p) 
+  with identity_zigzag_indR (b : B) (n : nat) 
+    : forall (q : identity_zigzag_Q R a0 b n), Q b (@colim _ (identity_zigzag_Q R a0 b) n q).
   Proof.
-    - induction n.
+    - (* Coq is very bad at figuring this out, so pose an explicit version *)
+      pose (colimP := (fun n p => @colim _ (identity_zigzag_P R a0 a) n p)).
+      destruct n.
       + intro p; destruct p.
         exact r.
       + snrapply Pushout_ind.
-        * simpl.
-          intro p'.
+        * (* Construct the map out of the previous a0 squiggle a *)
+          simpl.
+          intro p.
+          pose (prev := identity_zigzag_indL a n p).
+          snrapply (@transport _ (fun x => P a x) (colimP n p) _ _ prev).
+          symmetry.
+          exact (@colimp _ (identity_zigzag_P R a0 a) n (S n) idpath p).
+        * (* Construct the map out of the previous a0 squiggle b *)
+          intros [b [r' q]].
+          pose (inQ := identity_zigzag_indR b (S n) q).
 
-        
 
+          
+
+            
+
+
+    Admitted.
 End ZigzagIdentity.

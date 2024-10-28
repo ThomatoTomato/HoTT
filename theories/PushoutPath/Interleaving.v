@@ -336,7 +336,7 @@ Section Interme.
        *)
       (* Bring the concatenation out of `ap` in 3) *)
       lhs nrapply (1 @@ ap_pp (g n.+1) (L n (f n x)) (ap (f n.+1) (U n x)^) @@ 1).
-      (* Bring the inverse out of `ap` in 1) *)
+      (* Bring the inverse out of `ap` in 2) *)
       lhs nrapply (1 @@ ap_V (g n.+1) (L n (f n x)) @@ 1 @@ 1).
       (* Remove reflexivity 6) *)
       rhs apply (concat_p1 (ap (fun a => a ^+) (U n x)^)).
