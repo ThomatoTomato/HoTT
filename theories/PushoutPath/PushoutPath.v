@@ -40,7 +40,7 @@ Section InductiveStep.
 
   (** We define the next "dot" map as [pushr]. *)
   Definition dot_step : Dot (flip R) Q family_step
-    := fun b a r q => pushr (b; (r, q)).
+:= fun b a r q => pushr (b; (r, q)).
 
   (** We define iota as [pushl]. *)
   Definition iota_step : forall a, P a -> family_step a
@@ -77,7 +77,7 @@ Section Sequence.
     intro z.
     destruct z.
     (* Naming them all seems to be necessary for Coq to not reorder goals. *)
-    snrapply (let Pp:=_ in let Qp :=_ in let glueQPp :=_ in let Q:=_ in let gluePQ:=_ in let iotaQ:=_ in let P:=_ in let glueQP:=_ in let iotaP:=_ in let glueQPQ:=_ in let gluePQP:=_ in Build_zigzag_type Pp Qp glueQPp Q gluePQ iotaQ P glueQP iotaP glueQPQ gluePQP).
+  snrapply (let Pp:=_ in let Qp :=_ in let glueQPp :=_ in let Q:=_ in let gluePQ:=_ in let iotaQ:=_ in let P:=_ in let glueQP:=_ in let iotaP:=_ in let glueQPQ:=_ in let gluePQP:=_ in Build_zigzag_type Pp Qp glueQPp Q gluePQ iotaQ P glueQP iotaP glueQPQ gluePQP).
     - exact P0.
     - exact Q0.
     - exact glueQP0.
@@ -174,6 +174,12 @@ Section Sequence.
 
   Definition identity_zigzag_glueQPinf : identity_zigzag_Qinf b -> identity_zigzag_Pinf a
     := equiv_identity_zigzag_glueinf.
+
+  Definition identity_zigzag_gluePQinf_comm 
+    (n : nat) (p : identity_zigzag_P a n)
+    : identity_zigzag_gluePQinf (@colim _ (identity_zigzag_P a) n p) = (@colim _ (identity_zigzag_Q b) (S n) (identity_zigzag_gluePQ r n p)).
+  Proof.
+  Admitted.
 End Sequence.
 
 Section ZigzagIdentity.
@@ -230,9 +236,8 @@ Section ZigzagIdentity.
     := @colim _ (identity_zigzag_Q R a0 b) n q.
 
   Record zigzag_identity_record (n : nat) : Type := {
-    indRp (b : B) (q : identity_zigzag_Q R a0 b n) : Q b (colimR q);
+    indR (b : B) (q : identity_zigzag_Q R a0 b n) : Q b (colimR q);
     indL (a : A) (p : identity_zigzag_P R a0 a n) : P a (colimL p);
-    indR (b : B) (q : identity_zigzag_Q R a0 b (S n)) : Q b (colimR q);
   }.
   
   Definition zigzag_identity_ind (n : nat) : zigzag_identity_record n.
@@ -240,13 +245,25 @@ Section ZigzagIdentity.
     induction n.
     + snrapply Build_zigzag_identity_record.
       - intros b [].
-      - intros a []; exact r.
+      - intros a p; destruct p; exact r.
+    + destruct IHn as [indRp indLp].
+      snrapply Build_zigzag_identity_record.
+      - intro b.
+        snrapply Pushout_ind.
+        * (* Construct a map (p : a0 ~>n b) -> Q b (colim q^+) using indRp *)
+          intro q.
+          simpl.
+          snrapply (transport (fun y => Q b y)). 
+          1: exact (colimR q). 
+          1: exact (@colimp _ (identity_zigzag_Q R a0 b) n (S n) idpath q)^.
+          exact (indRp b q).
+        * (* Construct a map (q : a0 ~>n+1 a) -> Q b (colim (p * r')) using indLp *)
+          intros [a [r' p]].
+          Check (e a b r' (colimL p)).
+
+          
+
+          
   Admitted.
-
-  Context (n : nat) (a : A) (b : B) (r' : R a b) (p : identity_zigzag_P R a0 a n).
-
-  Definition check : (Q b (colimR (identity_zigzag_gluePQ R a0 r' n p))) = (Q b (identity_zigzag_gluePQinf R a0 r' (colimL p))).
-  Proof.
-    apply ap.
 
 
