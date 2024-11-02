@@ -167,14 +167,14 @@ Section Sequence.
 
   (** The gluing equivalence. *)
   Definition equiv_identity_zigzag_glueinf
-    : (identity_zigzag_Qinf b) <~> (identity_zigzag_Pinf a)
-    := equiv_interleaved_colim _ _ (identity_zigzag_glueQP r) (identity_zigzag_gluePQ r) (identity_zigzag_glueQPQ r) (identity_zigzag_gluePQP r).
+    : (identity_zigzag_Pinf a) <~> (identity_zigzag_Qinf b)
+    := equiv_zigzag_glue (iscolimit_colimit _) (iscolimit_colimit _) (identity_zigzag_glueQP r) (identity_zigzag_gluePQ r) (identity_zigzag_glueQPQ r) (identity_zigzag_gluePQP r).
 
   Definition identity_zigzag_gluePQinf : identity_zigzag_Pinf a -> identity_zigzag_Qinf b
-    := (equiv_identity_zigzag_glueinf)^-1.
+    := equiv_identity_zigzag_glueinf.
 
   Definition identity_zigzag_glueQPinf : identity_zigzag_Qinf b -> identity_zigzag_Pinf a
-    := equiv_identity_zigzag_glueinf.
+    := equiv_identity_zigzag_glueinf^-1.
 
   Definition identity_zigzag_gluePQinf_comm 
     (n : nat) (p : identity_zigzag_P a n)
@@ -182,16 +182,8 @@ Section Sequence.
   Proof.
     unfold identity_zigzag_gluePQinf.
     unfold equiv_identity_zigzag_glueinf.
+    reflexivity.
   Admitted.
-
-  (* Q b (colimR (pushr (a; (r', p))))
-
-
-Messages ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-e a b r' (colimL p)
-: P a (colimL p) <~> Q b (identity_zigzag_gluePQinf R a0 r' (colimL p)) *)
-  
 End Sequence.
 
 Section ZigzagIdentity.
@@ -220,7 +212,6 @@ Section ZigzagIdentity.
     + intro b; exact (identity_zigzag_Qinf R a0 b).
     + intros [[a b] r].
       apply path_universe_uncurried.
-      symmetry.
       exact (equiv_identity_zigzag_glueinf R a0 r).
   Defined.
 
@@ -238,7 +229,7 @@ Section ZigzagIdentity.
     symmetry.
     transitivity (Q b (identity_zigzag_gluePQinf R a0 r' (identity_zigzag_glueQPinf R a0 r' q))).
     + exact (e a b r' (identity_zigzag_glueQPinf R a0 r' q)).
-    + exact (equiv_transport (fun x => Q b x) (eissect (equiv_identity_zigzag_glueinf R a0 r') q)).
+    + exact (equiv_transport (fun x => Q b x) (eissect (equiv_identity_zigzag_glueinf R a0 r')^-1 q)).
   Defined.
 
   Let colimL {a : A} {n : nat} (p : identity_zigzag_P R a0 a n) : identity_zigzag_Pinf R a0 a
@@ -271,10 +262,8 @@ Section ZigzagIdentity.
           exact (indRp b q).
         * (* Construct a map (q : a0 ~>n+1 a) -> Q b (colim (p * r')) using indLp *)
           intros [a [r' p]].
-          Check (e a b r' (colimL p)).
-
-          
-
-          
+          rapply (e a b r' (colimL p)).
+          exact (indLp a p).
+        * intros.
   Admitted.
 End ZigzagIdentity.

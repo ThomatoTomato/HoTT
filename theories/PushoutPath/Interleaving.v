@@ -365,7 +365,7 @@ Section Interme.
 End Interme.
 
 (** Assuming that there are [A, B : Sequence] that fits in an interleaving diagram,
-    their colimits are isomorphic. We proceed by using the 2-out-of-6 property.  *)
+    their colimits are isomorphic. *)
 
 Section Interleaving.
   Context `{Funext} {A B : Sequence} 
@@ -383,57 +383,47 @@ Section Interleaving.
   (* We need two equalities: [seq_to_succ_seq A = d o u] and 
   [seq_to_succ_seq B = (succ_seq_map_seq_map d) o u. *)
 
-  (* The first equality needed is exactly what we came up with in the previous section. *)
-  Let tri1 : seq_to_succ_seq A = diagram_comp u d
-   := (zigzag_glue_map_tri f g U L)^.
+  Definition zigzag_glue_map_inf : A_w -> B_w
+    := functor_colimit d colim_A colim_B.
 
-  (* The second one requires some massaging: applying [zigzag_glue_map_tr] to the shifted 
-  functions doesn't exactly give us `(succ_seq_map_seq_map d)`, but we can find an equality
-  between them. *)
-  (* TODO: This probably shouldn't be necessary. *)
-  Let tri2 : seq_to_succ_seq B = diagram_comp (succ_seq_map_seq_map d) u.
+  Definition zigzag_glue_map_inv_inf : B_w -> A_w
+    := functor_colimit u colim_B (colim_succ colim_A).
+
+  (* Show that the gluing maps are equivalences on colimits using bi-invertible maps. *)
+
+  Definition zigzag_glue_map_isequiv : IsEquiv zigzag_glue_map_inv_inf.
   Proof.
-    symmetry.
-    pose (f':=g);
-    pose (g':=(fun n => f (S n)));
-    pose (U':=L);
-    pose (L':=(fun n => U (S n)));
-    (* Coq can't guess `succ_seq A` here *)
-    pose (attempt:=(@zigzag_glue_map_tri _ B (succ_seq A) f' g' U' L')).
-    assert (eq : (succ_seq_map_seq_map d) = (@zigzag_glue_map_inv B (succ_seq A) f' g' U' L')).
-    - snrapply path_DiagramMap.
-      + reflexivity.
-      + intros n m y x; destruct y. 
-        simpl.
-        rhs nrapply (concat_1p _).
-        nrapply (concat_p1 _).
-    - exact (transport (fun x => diagram_comp x u = seq_to_succ_seq B) eq^ attempt).
+    snrapply isequiv_biinv'.
+    rapply pair.
+    - (* The section is [Interme] applied to the successor sequence *)
+      (* Shift the data by one half step *)
+      pose (f':=g);
+      pose (g':=(fun n => f (S n)));
+      pose (U':=L);
+      pose (L':=(fun n => U (S n)));
+      (* Coq can't guess `succ_seq A` here *)
+      pose (theinv:= (@zigzag_glue_map_inv B (succ_seq A) f' g' U' L')).
+      exists (functor_colimit theinv (colim_succ colim_A) (colim_succ colim_B)).
+      srapply ap10.
+      lhs nrapply (functor_colimit_compose u _ colim_B (colim_succ colim_A) (colim_succ colim_B)).
+      lhs nrapply (ap (fun x => functor_colimit x colim_B (colim_succ colim_B))). { 
+        exact (@zigzag_glue_map_tri _ B (succ_seq A) f' g' U' L').
+      }
+      rapply abstr_colim_seq_to_abstr_colim_succ_seq_is_idmap.
+    - (* The retraction is [Interme] on this sequence *)
+      exists zigzag_glue_map_inf.
+      apply ap10.
+      lhs nrapply (functor_colimit_compose d u colim_A colim_B (colim_succ colim_A)).
+      lhs nrapply (ap (fun x => functor_colimit x colim_A (colim_succ colim_A))). {
+        exact (zigzag_glue_map_tri f g U L).
+      }
+      rapply abstr_colim_seq_to_abstr_colim_succ_seq_is_idmap.
   Defined.
 
-  Definition isequiv_interleaved_colim_maps
-    : IsEquiv (functor_colimit d _ _).
-  Proof.
-    nrapply two_out_of_sixR.
-    - exact (isequiv_colim_composite colim_A colim_B d u tri1).
-    - exact (isequiv_colim_composite colim_B (colim_succ colim_A) u 
-      (succ_seq_map_seq_map d) tri2).
-  Defined.
-
-  Definition equiv_interleaved_colim : A_w <~> B_w.
-  Proof.
-    snrapply Build_Equiv.
-    - exact (functor_colimit d colim_A colim_B).
-    - exact isequiv_interleaved_colim_maps.
-  Defined.
-
-  (** A version of [equiv_interleaved_colim] with a better inverse] *)
-  Definition equiv_interleaved_colim' : B_w <~> A_w.
+  Definition equiv_zigzag_glue : B_w <~> A_w.
   Proof.
     snrapply Build_Equiv.
-    + exact (functor_colimit u colim_B (colim_succ colim_A)).
-    + apply isequiv_biinv'.
-      rapply pair.
-      - exists (functor_colimit (succ_seq_map_seq_map d) (colim_succ colim_A) (colim_succ colim_B)).
+    + exact zigzag_glue_map_inv_inf.
+    + exact zigzag_glue_map_isequiv.
   Defined.
-
 End Interleaving.
