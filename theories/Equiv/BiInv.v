@@ -21,6 +21,17 @@ Proof.
     s).
 Defined.
 
+(** Same as [isequiv_biinv], but using the retraction as the inverse instead of the section *)
+
+Definition isequiv_biinv' `(f : A -> B)
+  : BiInv f -> IsEquiv f.
+Proof.
+  intros [[g s] [h r]].
+  exact (isequiv_adjointify f h
+    r
+    (fun x => (s (h (f x)))^ @ (ap g (r (f x))) @ (s x))).
+Defined.
+
 Definition biinv_isequiv `(f : A -> B)
   : IsEquiv f -> BiInv f.
 Proof.

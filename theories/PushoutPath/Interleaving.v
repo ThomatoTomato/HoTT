@@ -11,6 +11,7 @@ Require Import Colimits.Colimit.
 Require Import Colimits.Sequential.
 Require Import Diagram.
 Require Import Types.
+Require Import Equiv.BiInv.
 
 (** Suppose we have sequences [A_i] and [B_i]. An interleaving from [A_i] to [B_i] consists of two natural transformations d : A_i => B_i (d for down) and u : B_i => A_i+1 (u for up), such that the composites (u o d) and (d o i) correspond to the morphisms in the diagram itself. In other words, the following diagram is commutative: *)
     
@@ -424,4 +425,15 @@ Section Interleaving.
     - exact (functor_colimit d colim_A colim_B).
     - exact isequiv_interleaved_colim_maps.
   Defined.
+
+  (** A version of [equiv_interleaved_colim] with a better inverse] *)
+  Definition equiv_interleaved_colim' : B_w <~> A_w.
+  Proof.
+    snrapply Build_Equiv.
+    + exact (functor_colimit u colim_B (colim_succ colim_A)).
+    + apply isequiv_biinv'.
+      rapply pair.
+      - exists (functor_colimit (succ_seq_map_seq_map d) (colim_succ colim_A) (colim_succ colim_B)).
+  Defined.
+
 End Interleaving.

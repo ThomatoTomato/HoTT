@@ -7,6 +7,7 @@ Require Import WildCat.
 Require Import Colimits.Colimit.
 Require Import Colimits.Sequential.
 Require Import Diagram.
+Require Import Graph.
 Require Import Types.
 Require Import PushoutPath.Interleaving.
 
@@ -179,7 +180,18 @@ Section Sequence.
     (n : nat) (p : identity_zigzag_P a n)
     : identity_zigzag_gluePQinf (@colim _ (identity_zigzag_P a) n p) = (@colim _ (identity_zigzag_Q b) (S n) (identity_zigzag_gluePQ r n p)).
   Proof.
+    unfold identity_zigzag_gluePQinf.
+    unfold equiv_identity_zigzag_glueinf.
   Admitted.
+
+  (* Q b (colimR (pushr (a; (r', p))))
+
+
+Messages ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+e a b r' (colimL p)
+: P a (colimL p) <~> Q b (identity_zigzag_gluePQinf R a0 r' (colimL p)) *)
+  
 End Sequence.
 
 Section ZigzagIdentity.
@@ -265,5 +277,4 @@ Section ZigzagIdentity.
 
           
   Admitted.
-
-
+End ZigzagIdentity.
