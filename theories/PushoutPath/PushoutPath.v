@@ -264,6 +264,19 @@ Section ZigzagIdentity.
           intros [a [r' p]].
           rapply (e a b r' (colimL p)).
           exact (indLp a p).
-        * intros.
+        * intros [[a r'] q].
+          simpl.
+          (*
+transport
+  (fun w : (identity_zigzag ?n?)  => Q b (colimR w))
+  (pglue ((a; r'), q))
+  (transport (fun y => Q b y) (colimp n n.+1%nat 1 q)^ (indRp b q))
+
+=
+
+e a b r'
+  (colimL (glueQP R _ b a r' q))
+  (indLp a (glueQP R _ b a r' q))
+           *)
   Admitted.
 End ZigzagIdentity.
