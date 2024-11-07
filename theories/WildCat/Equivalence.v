@@ -17,6 +17,28 @@ Class IsCatEquiv {A B : Type} (F : A -> B) `{Is1Functor A B F} `{!HasEquivs B} :
 Arguments spl_ess_surj {A B} F {_ _ _ _ _ _ _ _ _ _ _ _} b : rename.
 Arguments hom_spl_ess_surj {A B} F {_ _ _ _ _ _ _ _ _ _ _ _ _ _} f : rename.
 Arguments hom_surjinj {A B} F {_ _ _ _ _ _ _ _ _ _ _ a b f g} p : rename.
+
+(** If [F : A -> B] is an equivalence of categories, then we expect there to be a functor [G : B -> A] such that [F] and [G] are quasi-inverses. *)
+Section CatEquivInverse.
+  Context {A B : Type} (F : A -> B) `{IsCatEquiv A B F}.
+
+  Definition G (b : B) : A := pr1 (spl_ess_surj F b).
+
+  Definition approx_by_F {b b' : B} (f : b $-> b') : F (G b) $-> F (G b').
+  Proof.
+    pose (ab := pr2 (spl_ess_surj F b)).
+    pose (ab' := pr2 (spl_ess_surj F b')).
+    exact (ab'^-1$ $o f $o ab).
+  Defined.
+
+  Instance G_is0functor : Is0Functor G.
+  Proof.
+    snrapply Build_Is0Functor.
+    intros b b' g.
+    exact (pr1 (hom_spl_ess_surj F (approx_by_F g))).
+  Defined.
+End CatEquivInverse.
+
 (** I don't think this type is contractlible under Univalence and probably HasMorExt. *)
 
 Class IsCatQuasiInv {A B : Type} (F : A -> B) `{Is1Functor A B F, !HasEquivs A, !HasEquivs B} :=
