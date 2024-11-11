@@ -228,6 +228,12 @@ Section ZigzagIdentity.
   Let colimR {b : B} {n : nat} (q : identity_zigzag_Q R a0 b n) : identity_zigzag_Qinf R a0 b
     := @colim _ (identity_zigzag_Q R a0 b) n q.
 
+  Let colimpL {a : A} {n : nat} (p : identity_zigzag_P R a0 a n) 
+    := @colimp _ (identity_zigzag_P R a0 a) n (S n) idpath p.
+
+  Let colimpR {b : B} {n : nat} (q : identity_zigzag_Q R a0 b n) 
+    := @colimp _ (identity_zigzag_Q R a0 b) n (S n) idpath q.
+
   (** The equivalence involving the inverse gluing map. *)
   Let einv : forall (a : A) (b : B) (r : R a b) (n : nat) (q : identity_zigzag_Q R a0 b n), Q b (colimR q) <~> P a (identity_zigzag_glueQPinf R a0 r (colimR q)).
   Proof.
@@ -254,18 +260,24 @@ Section ZigzagIdentity.
     unfold einv.
     simpl.
     snrapply (moveR_equiv_V' (e a b r _)).
+    Open Scope long_path_scope.
+    rewrite ap_V.
+    rewrite <- inv_pp.
     (**
 
 transport 
    (fun y => Q b y)
-   (ap (colimR n+2)
-       (glueQPQ n.+1 (gluePQ r n p))^
-       @ colimp n.+1 (gluePQ r n p))^ 
+   ((ap (colimR n+2)
+       (glueQPQ n.+1 (gluePQ r n p))^)
+    @ colimp n.+1 (gluePQ r n p))^
    (e a b r (colimL p) x)
+
+       ((colimp n+1 (gluePQ r n p))
+        @ (ap (colimR n+2) (glueQPQ n+1 (gluePQ r n p))))^
 
 = 
 
-e a b r (glueQP (gluePQ p))
+e a b r (colimL (glueQP (gluePQ p)))
   (transport
      (fun y => P a y)
      ((colimp n p)^

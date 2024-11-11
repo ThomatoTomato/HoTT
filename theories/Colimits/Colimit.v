@@ -332,3 +332,12 @@ Proof.
   apply equiv_diagram_const_cocone.
 Defined.
 
+(** The two ways of getting a path [colim ((D _f f) x) = colim ((D _f f) y)] from an path [x = y] are equivalent. *)
+Definition thelemma {G : Graph} {D : Diagram G} {i j : G} (f : G i j) {x y : D i} (p : x = y) 
+  : (colimp i j f x) @ (ap (colim i) p) @ (colimp i j f y)^ 
+    = (ap (colim j) (ap (D _f f) p)).
+Proof.
+  rhs apply (ap_compose (D _f f) (colim j) p)^.
+  rhs apply (ap_homotopic (colimp i j f) p).
+  reflexivity.
+Defined.
