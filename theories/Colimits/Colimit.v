@@ -12,6 +12,8 @@ Generalizable All Variables.
 
 (** * Colimits *)
 
+(** ** Abstract definition *)
+
 (** A colimit is the extremity of a cocone. *)
 
 Class IsColimit `(D: Diagram G) (Q: Type) := {
@@ -33,21 +35,16 @@ Definition cocone_postcompose_inv `{D: Diagram G} {Q X}
   (H : IsColimit D Q) (C' : Cocone D X) : Q -> X
   := @equiv_inv _ _ _ (iscolimit_unicocone H X) C'.
 
-(** * Existence of colimits *)
+(** ** Existence of colimits *)
 
-(** Whatever the diagram considered, there exists a colimit of it. The existence is given by the HIT [colimit]. *)
-
-(** ** Definition of the HIT 
+(** Every diagram has a colimit.  It could be described as the following HIT
 <<
   HIT Colimit {G : Graph} (D : Diagram G) : Type :=
   | colim : forall i, D i -> Colimit D
   | colimp : forall i j (f : G i j) (x : D i) : colim j (D _f f x) = colim i x
   .
 >>
-*)
-
-(** A colimit is just the coequalizer of the source and target maps of the diagram. *)
-(** The source type in the coequalizer ought to be:
+but we instead describe it as the coequalizer of the source and target maps of the diagram.  The source type in the coequalizer ought to be:
 <<
 {x : sig D & {y : sig D & {f : G x.1 y.1 & D _f f x.2 = y.2}}}
 >>
@@ -182,7 +179,45 @@ Defined.
 Global Instance iscolimit_colimit `{Funext} {G : Graph} (D : Diagram G)
   : IsColimit D (Colimit D) := Build_IsColimit _ (unicocone_colimit D).
 
-(** * Functoriality of colimits *)
+(** ** Functoriality of concrete colimits *)
+
+(** We will capitalize [Colimit] to indicate that these definitions relate to the concrete colimit defined above.  Below, we will also get functoriality for abstract colimits, without the capital C.  However, to apply those results to the concrete colimit uses [iscolimit_colimit], which requires [Funext], so it is also useful to give direct proofs of some facts. *)
+
+Definition functor_Colimit {G : Graph} {D1 D2 : Diagram G} (m : DiagramMap D1 D2)
+  : Colimit D1 -> Colimit D2.
+Proof.
+  apply Colimit_rec.
+  refine (cocone_precompose m (cocone_colimit D2)).
+Defined.
+
+Definition functor_Colimit_homotopy {G : Graph} {D1 D2 : Diagram G}
+  {m1 m2 : DiagramMap D1 D2} (h_obj : forall i, m1 i == m2 i)
+  (h_comm : forall i j (g : G i j) x,
+      DiagramMap_comm m1 g x @ h_obj j (D1 _f g x)
+      = ap (D2 _f g) (h_obj i x) @ DiagramMap_comm m2 g x)
+  : functor_Colimit m1 == functor_Colimit m2.
+Proof.
+  (* The proof is very similar to the proof of [functor_coeq_homotopy], but it's not clear if we can easily reuse that here. We'd have to redefine [functor_Colimit] using [functor_coeq], and that is more awkward. *)
+  snrapply Colimit_ind.
+  - intros i x; simpl.
+    apply ap, h_obj.
+  - intros i j g x; simpl.
+    Open Scope long_path_scope.
+    nrapply (transport_paths_FlFr' (colimp i j g x)); simpl.
+    rewrite 2 Colimit_rec_beta_colimp; simpl.
+    rewrite ap_V.
+    lhs nrapply concat_pp_p.
+    apply moveR_Vp.
+    rewrite ! concat_p_pp.
+    rewrite <- 2 ap_pp.
+    rewrite h_comm.
+    rewrite concat_pp_V.
+    rewrite <- ap_compose.
+    exact (concat_Ap (colimp i j g) (h_obj i x))^.
+    Close Scope long_path_scope.
+Qed.
+
+(** ** Functoriality of abstract colimits *)
 
 Section FunctorialityColimit.
 
@@ -207,7 +242,7 @@ Section FunctorialityColimit.
     apply cocone_postcompose_equiv_universality, HQ.
   Defined.
 
-  (** A diagram map [m] : [D1] => [D2] induces a map between any two colimits of [D1] and [D2]. *)
+  (** A diagram map [m : D1 => D2] induces a map between any two colimits of [D1] and [D2]. *)
 
   Definition functor_colimit {D1 D2 : Diagram G} (m : DiagramMap D1 D2)
     {Q1 Q2} (HQ1 : IsColimit D1 Q1) (HQ2 : IsColimit D2 Q2)
@@ -310,7 +345,7 @@ Section FunctorialityColimit.
 
 End FunctorialityColimit.
 
-(** * Unicity of colimits *)
+(** ** Unicity of colimits *)
 
 (** A particuliar case of the functoriality result is that all colimits of a diagram are equivalent (and hence equal in presence of univalence). *)
 
@@ -322,7 +357,7 @@ Proof.
   srapply (Build_diagram_equiv (diagram_idmap D)).
 Defined.
 
-(** * Colimits are left adjoint to constant diagram *)
+(** ** Colimits are left adjoint to constant diagram *)
 
 Theorem colimit_adjoint `{Funext} {G : Graph} {D : Diagram G} {C : Type}
   : (Colimit D -> C) <~> DiagramMap D (diagram_const C).

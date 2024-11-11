@@ -535,4 +535,10 @@ Proof.
   exact (equiv_iff_hprop_uncurried (iff_contr_hprop A)).
 Defined.
 
+(** If a type [A] implies that it is [n.+1]-truncated, then it is [n.+1]-truncated. **)
+Definition istrunc_inhabited_istrunc {n : trunc_index}
+  {A : Type} (H : A -> IsTrunc n.+1 A)
+  : IsTrunc n.+1 A
+  := istrunc_S _ (fun a b => H a a b).
+
 (** If you are looking for a theorem about truncation, you may want to read the note "Finding Theorems" in "STYLE.md". *)
