@@ -205,12 +205,11 @@ Defined.
 
 (** Homotopic diagram maps induce homotopic maps. *)
 Definition functor_Colimit_half_homotopy {G : Graph} {D1 D2 : Diagram G}
-  {m1 m2 : DiagramMap D1 D2} {Q} (HQ : Cocone D2 Q) (h_obj : forall i, m1 i == m2 i)
-  (h_comm : forall i j (g : G i j) x,
-      DiagramMap_comm m1 g x @ h_obj j (D1 _f g x)
-      = ap (D2 _f g) (h_obj i x) @ DiagramMap_comm m2 g x)
+  {m1 m2 : DiagramMap D1 D2} {Q} (HQ : Cocone D2 Q)
+  (h : DiagramMap_homotopy m1 m2)
   : functor_Colimit_half m1 HQ == functor_Colimit_half m2 HQ.
 Proof.
+  destruct h as [h_obj h_comm].
   snrapply Colimit_rec_homotopy'.
   - intros i x; cbn. apply ap, h_obj.
   - intros i j g x; simpl.
@@ -235,12 +234,9 @@ Definition functor_Colimit {G : Graph} {D1 D2 : Diagram G} (m : DiagramMap D1 D2
 
 (** A homotopy between diagram maps [m1, m2 : D1 => D2] gives a homotopy between the induced maps. *)
 Definition functor_Colimit_homotopy {G : Graph} {D1 D2 : Diagram G}
-  {m1 m2 : DiagramMap D1 D2} (h_obj : forall i, m1 i == m2 i)
-  (h_comm : forall i j (g : G i j) x,
-      DiagramMap_comm m1 g x @ h_obj j (D1 _f g x)
-      = ap (D2 _f g) (h_obj i x) @ DiagramMap_comm m2 g x)
+  {m1 m2 : DiagramMap D1 D2} (h : DiagramMap_homotopy m1 m2)
   : functor_Colimit m1 == functor_Colimit m2
-  := functor_Colimit_half_homotopy _ h_obj h_comm.
+  := functor_Colimit_half_homotopy _ h.
 
 (** ** Functoriality of abstract colimits *)
 
