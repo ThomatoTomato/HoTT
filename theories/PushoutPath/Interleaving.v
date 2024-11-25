@@ -14,9 +14,8 @@ Require Import Diagram.
 Require Import Types.
 Require Import Equiv.BiInv.
 
-(** Suppose we have sequences [A_i] and [B_i]. An interleaving from [A_i] to [B_i] consists of two natural transformations d : A_i => B_i (d for down) and u : B_i => A_i+1 (u for up), such that the composites (u o d) and (d o i) correspond to the morphisms in the diagram itself. In other words, the following diagram is commutative: *)
-    
-(**  
+(** Suppose we have sequences [A_i] and [B_i]. An interleaving from [A_i] to [B_i] consists of two natural transformations [d : A_i => B_i] ([d] for down) and [u : B_i => A_i+1] ([u] for up), such that the following diagram is commutative:
+
 <<
     A_0 -------> A_1 ------> A_2 ------>
         \        ^  \        ^ 
@@ -24,11 +23,11 @@ Require Import Equiv.BiInv.
           \    /      \    /         ...
            v  /        v  /
            B_0 ------> B_1 ------->
->> 
-*)
+>>
 
-(** Given the setup above, we want to say that the colimit of the upper lower sequences are the same. From a sequence A, we can produce a diagram map from [A] to [succ_seq A]. It's the map that applies the arrow in the sequence to every element. *)
+Given the setup above, we want to say that the colimit of the upper and lower sequences are the same. *)
 
+(** From a sequence [A], we can produce a diagram map from [A] to [succ_seq A]. It's the map that applies the arrow in the sequence to every element. *)
 Definition seq_to_succ_seq (A : Sequence) : DiagramMap A (succ_seq A).
 Proof.
   snrapply Build_DiagramMap.
@@ -36,9 +35,7 @@ Proof.
   - intros m n [] x. reflexivity.
 Defined.
 
-(** Given a map of sequences we can define a map between 
-    their succesor sequences. *)
-
+(** Given a map of sequences we can define a map between their succesor sequences. *)
 Definition succ_seq_map_seq_map {A B : Sequence} (f : DiagramMap A B) 
   : DiagramMap (succ_seq A) (succ_seq B).
 Proof.
@@ -47,8 +44,7 @@ Proof.
   - intros m n []. exact (DiagramMap_comm f _).
 Defined.
 
-(** A cocone over a sequence defines a cocone over the successor sequence *)
-
+(** A cocone over a sequence defines a cocone over the successor sequence. *)
 Definition succ_seq_cocone_seq_cocone {A : Sequence} (T : Type) (C : Cocone A T)
   : Cocone (succ_seq A) T.
 Proof.
@@ -57,8 +53,7 @@ Proof.
   - intros m n []. rapply (legs_comm C).
 Defined.
 
-(** [cocone_precompose (seq_to_succ_seq A)] is an equivalence *)
-
+(** [cocone_precompose (seq_to_succ_seq A)] is an equivalence. *)
 Definition isequiv_cocone_precompose_seq_to_succ_seq
   `{Funext} {A : Sequence} {X : Type} 
   : IsEquiv (cocone_precompose (seq_to_succ_seq A) (X:=X)).
@@ -78,7 +73,6 @@ Proof.
 Defined.
 
 (** The cocone [colim_A] induces [idmap : A_w -> A_w]. *)
-
 Definition col_legs_induces_idmap `{Funext} {A : Sequence}
   {A_w} (colim_A : IsColimit A A_w) 
   : cocone_postcompose_inv colim_A colim_A = idmap.
@@ -91,19 +85,18 @@ Defined.
 
 (** We show that the map induced by [succ_seq_to_seq] is an equivalence. *)
 
+(* jdc: Let's use CamelCase names for Sections.  They can also be less descriptive, since they are never looked up. *)
 Section Is_Equiv_colim_succ_seq_to_seq_map.
   Context `{Funext} {A : Sequence}
     {A_w : Type} (colim_A : IsColimit A A_w).
 
-  (** The legs of [colim_A] induces a cocone from [succ_seq A] over [A_w] *)
-
+  (** The legs of [colim_A] induces a cocone from [succ_seq A] over [A_w]. *)
   Definition cocone_succ_seq_over_col 
     : Cocone (succ_seq A) A_w
     := succ_seq_cocone_seq_cocone A_w colim_A.
 
-  (** We start by showing that [abstr_colim_seq_to_abstr_colim_succ_seq] is a split-monomorphism. Observe that [cocone_succ_seq_over_col] essentially defines the same cocone as [colim_A]. I.e. the following  diagram is commutative: *)
+  (** We start by showing that [abstr_colim_seq_to_abstr_colim_succ_seq] is a split-monomorphism. Observe that [cocone_succ_seq_over_col] essentially defines the same cocone as [colim_A]. I.e. the following  diagram is commutative:
   
-  (**
   <<
                   A          succ_seq A
                ______          ______
@@ -132,7 +125,7 @@ Section Is_Equiv_colim_succ_seq_to_seq_map.
     simpl. exact (concat_1p _ @@ 1).
   Defined.
 
-  (* The cocone of [succ_seq A] over colim A is universal *)
+  (* The cocone of [succ_seq A] over colim A is universal *) (* jdc: I'll let you add periods and remove blank lines throughout. *)
 
   Instance iscolimit_succ_seq_A_over_A_w : IsColimit (succ_seq A) A_w.
   Proof.
@@ -229,7 +222,7 @@ Section Is_Equiv_colim_succ_seq_to_seq_map.
 
 End Is_Equiv_colim_succ_seq_to_seq_map.
 
-(** Intersplitting is a pun of interleaving and splitting. We will at first only assume that every other triangle is commutative. In this case, colim A is a retract of colim B. *)
+(**  In intersplitting we will only assume that every other triangle is commutative. In this case, colim A is a retract of colim B. *)
 
 Section Intersplitting.
   Context `{Funext} {A B : Sequence} 
@@ -240,9 +233,8 @@ Section Intersplitting.
     (comm_triangle : seq_to_succ_seq A = diagram_comp u d).
     
   (** Given the data above, we show that the associated diagram in the
-      colimit is also commutative. *)
+      colimit is also commutative.
 
-  (**
   <<
                   id
         col A_i -----> col A_i+1
@@ -252,9 +244,8 @@ Section Intersplitting.
                v     /
               col B_i
   >>
-  *)
-
-  (** It follows that d is split-epi, and u is split-mono, as desired. *)
+  
+  It follows that d is split-epi, and u is split-mono, as desired. *)
 
   Definition colimit_comm_triangle : 
     abstr_colim_seq_to_abstr_colim_succ_seq colim_A
@@ -373,7 +364,7 @@ Proof.
 Admitted.
 
 
-(** Given families of maps `f n : A n -> B n` and `g : B n -> A (n + 1)` with homotopies showing that they form zigzags, construct the actual diagram maps and show that their composition is equal to the successor diagram map. *)
+(** Given families of maps [f n : A n -> B n] and [g : B n -> A (n + 1)] with homotopies showing that they form zigzags, construct the actual diagram maps and show that their composition is equal to the successor diagram map. *)
 
 Section Interme.
   Context {A B : Sequence}
@@ -382,7 +373,7 @@ Section Interme.
     (U : forall (n : nat), (fun (x : A n) => x^+) == (g n) o (f n))
     (L : forall (n : nat), (fun (x : B n) => x^+) == (f (S n)) o (g n)).
 
-  (** The map built from `f`. Note that [zigzag_glue_map_tri] depends heavily on the exact homotopy used here. *)
+  (** The map built from [f]. Note that [zigzag_glue_map_tri] depends heavily on the exact homotopy used here. *)
   Definition zigzag_glue_map : DiagramMap A B.
   Proof.
     snrapply Build_DiagramMap.
@@ -393,7 +384,7 @@ Section Interme.
       exact (U n x)^.
   Defined.
 
-  (** The map built from `g`. *)
+  (** The map built from [g]. *)
   Definition zigzag_glue_map_inv : DiagramMap B (succ_seq A).
   Proof.
     snrapply Build_DiagramMap.
@@ -418,43 +409,36 @@ Section Interme.
       simpl.
       unfold CommutativeSquares.comm_square_comp.
       (* We need to show, stripping brackets:
-      1)   U n.+1 (g n (f n x))
-      2) @ ap (g n.+1) (L n (f n x))^) 
-      3) @ ap (g n.+1) (L n (f n x) @ ap (f n.+1) (U n x)^)
-      4) @ (U n.+1 x ^+)^ 
-          = 
-      5)  ap (fun a : A n.+1%nat => a ^+) (U n x)^ 
-      6) @ 1
+      1)   [U n.+1 (g n (f n x))]
+      2) [@ ap (g n.+1) (L n (f n x))^)] 
+      3) [@ ap (g n.+1) (L n (f n x) @ ap (f n.+1) (U n x)^)]
+      4) [@ (U n.+1 x ^+)^ ]
+          [=] 
+      5)  [ap (fun a : A n.+1%nat => a ^+) (U n x)^] 
+      6) [@ 1]
        *)
-      (* Bring the concatenation out of `ap` in 3) *)
-      lhs nrapply (1 @@ ap_pp (g n.+1) (L n (f n x)) (ap (f n.+1) (U n x)^) @@ 1).
-      (* Bring the inverse out of `ap` in 1) *)
-      lhs nrapply (1 @@ ap_V (g n.+1) (L n (f n x)) @@ 1 @@ 1).
-      (* Remove reflexivity 6) *)
-      rhs apply (concat_p1 (ap (fun a => a ^+) (U n x)^)).
+      Open Scope long_path_scope.
+      (* Concatenate reflexivity path *)
+      rhs nrapply (concat_p1 _).
+      (* Move [U n.+1 x] to the left hand side on the right *)
+      apply moveR_pV.
+      (* Split up ap on concatenations *)
+      lhs nrapply (1 @@ ap_pp (g n.+1) (L n (f n x)) (ap (f n.+1) (U n x)^)).
+      (* Bring the inverse out of [ap] in 1) *)
+      lhs nrapply (1 @@ ap_V (g n.+1) (L n (f n x)) @@ 1).
       (* Change associativity of 1 2 3 *)
-      lhs nrapply (concat_pp_p (U n.+1 _) ((ap (g n.+1) _)^) _ @@ 1).
-      (* Change associativity of 2 3 3.5 *)
-      lhs nrapply (1 @@ concat_p_pp ((ap _ _)^) (ap _ _) _ @@ 1).
-      (* 2 and 3 are inverse *)
-      lhs nrapply (1 @@ (concat_Vp (ap (g n.+1) (L n (f n x))) @@ 1) @@ 1).
-      (* Remove the reflexivity *)
-      lhs nrapply (1 @@ concat_1p _ @@ 1).
-      (* Add (U n.+1 x ^* ) on the right to both sides *)
-      apply (cancelR _ _ ((U n.+1 x ^+))).
-      (* Change associativity on the left... *)
-      lhs nrapply (concat_pp_p _ _ _).
-      (* ...and cancel 4 with the newly-added path *)
-      lhs nrapply (1 @@ concat_Vp _).
-      (* Remove the residual 1 *)
-      lhs nrapply (concat_p1 _).
-      (* `ap` of `ap` is `ap` of composition of functions *)
-      lhs nrapply (1 @@ ap_compose (f n.+1) (g n.+1) _)^.
-      (* Finish by naturality of `ap` *)
+      lhs nrapply (concat_pp_p (U n.+1 _) ((ap (g n.+1) _)^) _).
+      (* Cancel term by associativity *)
+      lhs nrapply (1 @@ concat_V_pp _ _).
+      (* [ap] of [ap] is [ap] of composition of functions *)
+      lhs_V nrapply (1 @@ ap_compose (f n.+1) (g n.+1) _).
+      (* Finish by naturality of [ap] *)
       exact (concat_Ap _ _)^.
+      Close Scope long_path_scope.
   Defined.
 End Interme.
 
+(* jdc: No line breaks in comments *)
 (** Assuming that there are [A, B : Sequence] that fits in an interleaving diagram,
     their colimits are isomorphic. *)
 
@@ -471,7 +455,7 @@ Section Interleaving.
   Check u.
   
   (* We need two equalities: [seq_to_succ_seq A = d o u] and 
-  [seq_to_succ_seq B = (succ_seq_map_seq_map d) o u. *)
+  [seq_to_succ_seq B = (succ_seq_map_seq_map d) o u]. *)
 
   Definition zigzag_glue_map_inf : Colimit A -> Colimit B
     := functor_Colimit d.
