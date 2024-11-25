@@ -6,6 +6,7 @@ Require Import Diagrams.Graph.
 Require Import Diagrams.Diagram.
 Require Import Diagrams.Cocone.
 Require Import Diagrams.Sequence.
+Require Import Diagrams.CommutativeSquares.
 Require Import WildCat.
 Require Import Colimits.Colimit.
 Require Import Colimits.Sequential.
@@ -282,10 +283,100 @@ Section Intersplitting.
 
 End Intersplitting.
 
+Section ColimitSucc.
+  Context (A : Sequence).
+
+  Definition Cocone_succ {Q} (HQ : Cocone A Q) : Cocone (succ_seq A) Q.
+  Proof.
+    snrapply Build_Cocone.
+    - intros i x.
+      exact (HQ (S i) x).
+    - intros i _ [] x.
+      exact (legs_comm HQ (S i) (S (S i)) idpath x).
+  Defined.
+
+  Definition Colimit_succ : Cocone (succ_seq A) (Colimit A)
+    := Cocone_succ (cocone_colimit A).
+
+  Definition Colimit_succ_map : Colimit A -> Colimit A
+    := functor_Colimit_half (seq_to_succ_seq A) (Colimit_succ).
+
+  Definition Colimit_succ_map_is_idmap : Colimit_succ_map == idmap.
+  Proof.
+    snrapply Colimit_rec_homotopy.
+    - intros i x; cbn.
+      apply colimp.
+    - intros m _ [] x; cbn.
+      nrefine (_ @@ _).
+      + apply concat_1p.
+      + symmetry; apply ap_idmap.
+  Defined.
+End ColimitSucc.
+
+Definition functor_Colimit_succ_half {A B : Sequence} (m : DiagramMap (succ_seq A) B) {Q} (HQ : Cocone B Q)
+  : Colimit A -> Q
+  := functor_Colimit_half (diagram_comp m (seq_to_succ_seq A)) HQ.
+
+Definition colim_succ_seq_to_seq (A : Sequence) : (Colimit (succ_seq A)) -> Colimit A.
+Proof.
+  snrapply Colimit_rec.
+  snrapply Build_Cocone.
+  - intros i x.
+    exact (@colim _ A (S i) x).
+  - intros i _ [] x.
+    exact (@colimp _ A (S i) (S (S i)) _ x).
+Defined.
+
+Definition functor_Colimit_half_compose {G : Graph} {A B C : Diagram G} (f : DiagramMap A B) (g : DiagramMap B C) {Q} (HQ : Cocone C Q)
+  : functor_Colimit_half (diagram_comp g f) HQ == (functor_Colimit_half g HQ) o (functor_Colimit f).
+Proof.
+  snrapply Colimit_rec_homotopy.
+  - intro i.
+    reflexivity.
+  - intros i j k x; cbn.
+    lhs refine (concat_p1 _).
+    rhs refine (concat_1p _).
+    unfold comm_square_comp.
+    Open Scope long_path_scope.
+    rewrite (ap_V).
+    rewrite (ap_pp (HQ j) _ (ap (g j) (DiagramMap_comm f k x))).
+    rewrite (inv_pp).
+    rhs apply (ap_compose (Colimit_rec (Colimit B) (cocone_precompose f (cocone_colimit B))) (Colimit_rec Q (cocone_precompose g HQ)) (colimp i j k x)).
+    rewrite (Colimit_rec_beta_colimp (Colimit B) (cocone_precompose f (cocone_colimit B))).
+    rewrite (ap_pp _ _).
+    rewrite (Colimit_rec_beta_colimp Q (cocone_precompose g HQ) _).
+    simpl.
+    rewrite 3 (ap_V).
+    rewrite (concat_p_pp).
+    rewrite <- (ap_compose (colim j) _).
+    simpl.
+    by rewrite (ap_compose (g j) _).
+    Close Scope long_path_scope.
+    Close Scope long_path_scope.
+Defined.
+
+Definition thething {A B : Sequence} (f : DiagramMap A (succ_seq B)) (g : DiagramMap (succ_seq B) (succ_seq A))
+  : (functor_Colimit_succ_half g (Colimit_succ A)) o (functor_Colimit_half f (Colimit_succ B)) == functor_Colimit_half (diagram_comp g f) (Colimit_succ A).
+Proof.
+  symmetry.
+  snrapply Colimit_rec_homotopy.
+  - intros i x.
+    simpl.
+    rhs apply (ap (@colim _ A (S (S i))) (DiagramMap_comm g idpath (f i x))^).
+    exact (@colimp _ A (S i) (S (S i)) idpath (g i (f i x)))^.
+  - intros i _ [] x.
+    simpl.
+    Open Scope long_path_scope.
+    unfold functor_Colimit_succ_half.
+    unfold functor_Colimit_half.
+    Close Scope long_path_scope.
+Admitted.
+
+
 (** Given families of maps `f n : A n -> B n` and `g : B n -> A (n + 1)` with homotopies showing that they form zigzags, construct the actual diagram maps and show that their composition is equal to the successor diagram map. *)
 
 Section Interme.
-  Context `{Funext} {A B : Sequence}
+  Context {A B : Sequence}
     (f : forall (n : nat), A n -> B n)
     (g : forall (n : nat), B n -> A (S n))
     (U : forall (n : nat), (fun (x : A n) => x^+) == (g n) o (f n))
@@ -316,9 +407,9 @@ Section Interme.
   Local Open Scope path_scope.
 
   (** Show that the composition of the two maps is the successor map. *)
-  Definition zigzag_glue_map_tri : (diagram_comp zigzag_glue_map_inv zigzag_glue_map) = seq_to_succ_seq A.
+  Definition zigzag_glue_map_tri : DiagramMap_homotopy (diagram_comp zigzag_glue_map_inv zigzag_glue_map) (seq_to_succ_seq A).
   Proof.
-    snrapply path_DiagramMap.
+    snrapply exist.
     - intros n x.
       simpl.
       exact (U n x)^.
@@ -368,9 +459,7 @@ End Interme.
     their colimits are isomorphic. *)
 
 Section Interleaving.
-  Context `{Funext} {A B : Sequence} 
-    {A_w : Type} (colim_A : IsColimit A A_w)
-    {B_w : Type} (colim_B : IsColimit B B_w)
+  Context {A B : Sequence} 
     (f : forall (n : nat), A n -> B n)
     (g : forall (n : nat), B n -> A (S n))
     (U : forall (n : nat), (fun (x : A n) => x^+) == (g n) o (f n))
@@ -379,48 +468,50 @@ Section Interleaving.
   Let d := zigzag_glue_map f g U L.
 
   Let u := zigzag_glue_map_inv f g U L.
+  Check u.
   
   (* We need two equalities: [seq_to_succ_seq A = d o u] and 
   [seq_to_succ_seq B = (succ_seq_map_seq_map d) o u. *)
 
-  Definition zigzag_glue_map_inf : A_w -> B_w
-    := functor_colimit d colim_A colim_B.
+  Definition zigzag_glue_map_inf : Colimit A -> Colimit B
+    := functor_Colimit d.
 
-  Definition zigzag_glue_map_inv_inf : B_w -> A_w
-    := functor_colimit u colim_B (colim_succ colim_A).
+  Definition zigzag_glue_map_inv_inf : Colimit B -> Colimit A
+    := functor_Colimit_half u (Colimit_succ A).
 
   (* Show that the gluing maps are equivalences on colimits using bi-invertible maps. *)
 
+  (*Definition zigzag_glue_map_tri : DiagramMap_homotopy (diagram_comp zigzag_glue_map_inv zigzag_glue_map) (seq_to_succ_seq A).*)
   Definition zigzag_glue_map_isequiv : IsEquiv zigzag_glue_map_inv_inf.
   Proof.
     snrapply isequiv_biinv'.
     rapply pair.
     - (* The section is [Interme] applied to the successor sequence *)
       (* Shift the data by one half step *)
-      pose (f':=g);
-      pose (g':=(fun n => f (S n)));
-      pose (U':=L);
-      pose (L':=(fun n => U (S n)));
+      pose (f':=g).
+      pose (g':=(fun n => f (S n))).
+      pose (U':=L).
+      pose (L':=(fun n => U (S n))).
       (* Coq can't guess `succ_seq A` here *)
       pose (theinv:= (@zigzag_glue_map_inv B (succ_seq A) f' g' U' L')).
-      exists (functor_colimit theinv (colim_succ colim_A) (colim_succ colim_B)).
-      srapply ap10.
-      lhs nrapply (functor_colimit_compose u _ colim_B (colim_succ colim_A) (colim_succ colim_B)).
-      lhs nrapply (ap (fun x => functor_colimit x colim_B (colim_succ colim_B))). { 
-        exact (@zigzag_glue_map_tri _ B (succ_seq A) f' g' U' L').
-      }
-      rapply abstr_colim_seq_to_abstr_colim_succ_seq_is_idmap.
-    - (* The retraction is [Interme] on this sequence *)
-      exists zigzag_glue_map_inf.
-      apply ap10.
-      lhs nrapply (functor_colimit_compose d u colim_A colim_B (colim_succ colim_A)).
-      lhs nrapply (ap (fun x => functor_colimit x colim_A (colim_succ colim_A))). {
-        exact (zigzag_glue_map_tri f g U L).
-      }
-      rapply abstr_colim_seq_to_abstr_colim_succ_seq_is_idmap.
+      exists (functor_Colimit_succ_half theinv (Colimit_succ B)).
+      unfold zigzag_glue_map_inv_inf.
+      Check (thething u theinv).
+      intro x.
+      lhs apply (thething u theinv x).
+      lhs apply (functor_Colimit_half_homotopy (@zigzag_glue_map_tri B (succ_seq A) f' g' U' L') (Colimit_succ B) x).
+      revert x.
+      exact (Colimit_succ_map_is_idmap B).
+    - exists zigzag_glue_map_inf.
+      transitivity (functor_Colimit_half (diagram_comp u d) (Colimit_succ A)).
+      + symmetry.
+        exact (functor_Colimit_half_compose d u (Colimit_succ A)).
+      + transitivity (functor_Colimit_half (seq_to_succ_seq A) (Colimit_succ A)).
+        * exact (functor_Colimit_half_homotopy (zigzag_glue_map_tri f g U L) (Colimit_succ A)).
+        * exact (Colimit_succ_map_is_idmap A).
   Defined.
 
-  Definition equiv_zigzag_glue : B_w <~> A_w.
+  Definition equiv_zigzag_glue : Colimit B <~> Colimit A.
   Proof.
     snrapply Build_Equiv.
     + exact zigzag_glue_map_inv_inf.

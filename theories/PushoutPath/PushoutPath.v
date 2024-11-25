@@ -3,7 +3,7 @@ Require Import Colimits.Pushout.
 Require Import Spaces.Nat.
 Require Import Basics.Tactics.
 Require Import Diagrams.Sequence.
-Require ImportWildCat.
+Require Import WildCat.
 Require Import Colimits.Colimit.
 Require Import Colimits.Sequential.
 Require Import Diagram.
@@ -168,7 +168,7 @@ Section Sequence.
   (** The gluing equivalence. *)
   Definition equiv_identity_zigzag_glueinf
     : (identity_zigzag_Pinf a) <~> (identity_zigzag_Qinf b)
-    := equiv_zigzag_glue (iscolimit_colimit _) (iscolimit_colimit _) (identity_zigzag_glueQP r) (identity_zigzag_gluePQ r) (identity_zigzag_glueQPQ r) (identity_zigzag_gluePQP r).
+    := equiv_zigzag_glue (identity_zigzag_glueQP r) (identity_zigzag_gluePQ r) (identity_zigzag_glueQPQ r) (identity_zigzag_gluePQP r).
 
   Definition identity_zigzag_gluePQinf : identity_zigzag_Pinf a -> identity_zigzag_Qinf b
     := equiv_identity_zigzag_glueinf.
@@ -278,6 +278,14 @@ Section ZigzagIdentity.
 
   Let glueQPinf {a : A} {b : B} (r : R a b) := identity_zigzag_glueQPinf R a0 r.
 
+  Let iotaP {a : A} (n : nat) := identity_zigzag_iotaP R a0 n.
+
+  Let Pn (n : nat) (a : A) (p : identity_zigzag_P R a0 a n)
+    := P a (colimL p).
+
+  Let Qn (n : nat) (b : B) (q : identity_zigzag_Q R a0 b n)
+    := Q b (colimR q).
+
   (** We get an alternative identification [colim p = colim p^+] via the gluing map *)
   Let colimp_from_glue {a : A} {b : B} (r : R a b) (n : nat) (p : identity_zigzag_P R a0 a n) 
     : (colimL p) = (colimL p^+).
@@ -288,10 +296,12 @@ Section ZigzagIdentity.
       exact (identity_zigzag_gluePQP R a0 r n p)^.
   Defined.
 
-  Let colimp_is_colimp_from_glue {a : A} {b : B} (r : R a b) (n : nat) (p : identity_zigzag_P R a0 a n)
-    : (colimp_from_glue r n p) = (colimpL p)^.
-  Proof.
+  Let pushout_ind_data_P (a : A) (n : nat)
+    := {pushb : (forall (p : identity_zigzag_P R a0 a n), P (
 
+
+
+  (** The following is garbage: *)
     (*
 
   Record zigzag_identity_record (n : nat) : Type := {
@@ -459,6 +469,6 @@ transport
 
 einv a b r' 1 (pushr (a; (r', p'))) (e a b r' (colimL p') (indL0 a p'))
 
-  *)
+*)*)*)
     
 End ZigzagIdentity.

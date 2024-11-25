@@ -205,8 +205,8 @@ Defined.
 
 (** Homotopic diagram maps induce homotopic maps. *)
 Definition functor_Colimit_half_homotopy {G : Graph} {D1 D2 : Diagram G}
-  {m1 m2 : DiagramMap D1 D2} {Q} (HQ : Cocone D2 Q)
-  (h : DiagramMap_homotopy m1 m2)
+  {m1 m2 : DiagramMap D1 D2} (h : DiagramMap_homotopy m1 m2) 
+  {Q} (HQ : Cocone D2 Q)
   : functor_Colimit_half m1 HQ == functor_Colimit_half m2 HQ.
 Proof.
   destruct h as [h_obj h_comm].
@@ -236,7 +236,7 @@ Definition functor_Colimit {G : Graph} {D1 D2 : Diagram G} (m : DiagramMap D1 D2
 Definition functor_Colimit_homotopy {G : Graph} {D1 D2 : Diagram G}
   {m1 m2 : DiagramMap D1 D2} (h : DiagramMap_homotopy m1 m2)
   : functor_Colimit m1 == functor_Colimit m2
-  := functor_Colimit_half_homotopy _ h.
+  := functor_Colimit_half_homotopy h _.
 
 (** ** Functoriality of abstract colimits *)
 
