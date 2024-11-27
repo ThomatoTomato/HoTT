@@ -55,25 +55,25 @@ Section Sequence.
   (** Use a record type for a full step to avoid the interleaved sequence and [flip R]. *)
   (* jdc: rename to Zig? *)
   Record zigzag_type : Type := {
-    Pp : Family A;
-    Qp : Family B;
-    concatQPp : Dot (flip R) Qp Pp;
+    P : Family A;
+    Q : Family B;
+    concatQP : Dot (flip R) Q P;
   }.
 
-  Definition Q (Z : zigzag_type) : Family B
-    := family_step (flip R) (concatQPp Z).
+  Definition Qsucc (Z : zigzag_type) : Family B
+    := family_step (flip R) (concatQP Z).
 
-  Definition concatPQ (Z : zigzag_type) : Dot R (Pp Z) (Q Z)
-    := dot_step (flip R) (concatQPp Z).
+  Definition concatPQ (Z : zigzag_type) : Dot R (P Z) (Qsucc Z)
+    := dot_step (flip R) (concatQP Z).
 
-  Definition P (Z : zigzag_type) : Family A
+  Definition Psucc (Z : zigzag_type) : Family A
     := family_step R (concatPQ Z).
 
-  Definition concatQP (Z : zigzag_type) : Dot (flip R) (Q Z) (P Z)
+  Definition concatQPsucc (Z : zigzag_type) : Dot (flip R) (Qsucc Z) (Psucc Z)
     := dot_step R (concatPQ Z).
 
   Definition zigzag_step (Z : zigzag_type) : zigzag_type
-    := Build_zigzag_type (P Z) (Q Z) (concatQP Z).
+    := Build_zigzag_type (Psucc Z) (Qsucc Z) (concatQPsucc Z).
 
   Definition identity_zigzag_initial : zigzag_type.
   Proof.
@@ -90,16 +90,16 @@ Section Sequence.
   Proof.
     intro a.
     snrapply Build_Sequence.
-    - intro n; exact (Pp (identity_zigzag n) a).
-    - intro n. unfold P; cbn. apply iota_step.
+    - intro n; exact (P (identity_zigzag n) a).
+    - intro n. cbn. apply iota_step.
   Defined.
 
   Definition identity_zigzag_Q : B -> Sequence.
   Proof.
     intro b.
     snrapply Build_Sequence.
-    - intro n; exact (Qp (identity_zigzag n) b).
-    - intro n. unfold Q; cbn. apply iota_step.
+    - intro n; exact (Q (identity_zigzag n) b).
+    - intro n. cbn. apply iota_step.
   Defined.
 
   Definition identity_zigzag_gluePQ {a : A} {b : B} (r : R a b) 
@@ -119,7 +119,7 @@ Section Sequence.
     : DiagramMap (identity_zigzag_Q b) (identity_zigzag_P a).
   Proof.
     snrapply Build_DiagramMap.
-    - intro n; exact (concatQPp (identity_zigzag n) b a r).
+    - intro n; exact (concatQP (identity_zigzag n) b a r).
     - intros n m g x.
       destruct g.
       lhs nrapply homotopy_step.
@@ -168,7 +168,7 @@ Section Sequence.
     unfold identity_zigzag_gluePQinf.
     unfold equiv_identity_zigzag_glueinf.
     reflexivity.
-  Admitted.
+  Defined.
 End Sequence.
 
 Section InverseEquivCoh.
@@ -265,26 +265,111 @@ Section ZigzagIdentity.
 
   Let iotaP {a : A} (n : nat) := (seq_to_succ_seq (identity_zigzag_P R a0 a) n).
 
+  Let iotaQ {b : B} (n : nat) := (seq_to_succ_seq (identity_zigzag_Q R a0 b) n).
+
   Let Pn (n : nat) (a : A) (p : identity_zigzag_P R a0 a n)
     := P a (colimL p).
 
   Let Qn (n : nat) (b : B) (q : identity_zigzag_Q R a0 b n)
     := Q b (colimR q).
 
-  (** We get an alternative identification [colim p = colim p^+] via the gluing map *)
-  Let colimp_from_glue {a : A} {b : B} (r : R a b) (n : nat) (p : identity_zigzag_P R a0 a n) 
-    : (colimL p) = (colimL p^+).
+  (** These are the maps used in the pushout defining [P_{n+1}] in the identity zigzag *)
+  Let pushfP (a : A) (n : nat) : forall (c : ({b : B | R a b} * (identity_zigzag_P R a0 a n))), identity_zigzag_P R a0 a n
+    := snd.
+
+  Let pushgP (a : A) (n : nat)
+    : forall (c : ({b : B | R a b} * (identity_zigzag_P R a0 a n))), {b : B & (R a b * (identity_zigzag_Q R a0 b (S n)))}.
   Proof.
-    transitivity (colimL (glueQP r (S n) (gluePQ r n p))).
-    - exact (eissect (equiv_identity_zigzag_glueinf R a0 r) (colimL p))^.
-    - apply ap.
-      exact (identity_zigzag_gluePQP R a0 r n p)^.
+    intros [[b r] p].
+    exact (b ; (r , (gluePQ r n p))).
   Defined.
 
-  Let pushout_ind_data_P (a : A) (n : nat)
-    := {pushb : (forall (p : identity_zigzag_P R a0 a n), P (
+  (** These are the maps used in the pushout defining [Q_{n+1}] in the identity zigzag *)
+  Let pushfQ (b : B) (n : nat) : forall (c : ({a : A | R a b} * (identity_zigzag_Q R a0 b n))), identity_zigzag_Q R a0 b n
+    := snd.
 
+  Let pushgQ (b : B) (n : nat)
+    : forall (c : ({a : A | R a b} * (identity_zigzag_Q R a0 b n))), {a : A & (R a b * (identity_zigzag_P R a0 a n))}.
+  Proof.
+    intros [[a r] q].
+    exact (a ; (r , (glueQP r n q))).
+  Defined.
 
+  (* The maps we wish to construct: *)
+  Let indLn (n : nat) := forall (a : A) (p : identity_zigzag_P R a0 a n), Pn n a p.
+  Let indRn (n : nat) := forall (b : B) (q : identity_zigzag_Q R a0 b n), Qn n b q.
+
+  (* The goal of this section is to represent the data needed to produce something of type [indL (S n) a] from something of type [indRn (S n)] and [indLn n]; we are capturing the following situation:
+
+<<
+    
+                   pushg := (b, r, p) |-> (b, r, gluePQ n r p)                     (b, r) |-> (b, r, indR n+1 b)
+
+  (b : B)x(r : R a b)x(p : a0 ~>n a) -----> (b : B)x(r : R a b)x(q : a0 ~>n+1 b) ----------------------.
+               |                                            |                                           \
+               |                                            |                                            \
+ pushf := pr3  |                                            | (b, r, q) |-> glueQP n+1 r q                \
+               |                                            |                                              \
+               v                                            v                                               v
+         (p : a0 ~>n A) ---------------------------> (p' : a0 ~>n+1 a)                      (b : B)x(r : R a b)xQn n+1 b q
+                \                                                                                           |
+                 \                iotaP                                                                     |
+                  \                                                                   (b, r) |-> e a b r    |
+                   \                                                                                        |
+                    \                                                                                       v
+                     \                                                                          Pn n+1 a (glueQP n+1 r q)
+                      `--------------> Pn n+1 a p^+
+
+>>
+
+We don't care about the bottom left map (which is [indL n a] followed by [transport colimp]) but to define [indR (S n)] it is extremely helpful to have the top right square, i.e. the composition of the right map in the pushout followed by the induced map, commute judgementally without any additional transports.
+
+  The right case changes the square slightly, replacing [e] with [einv] and some indexing changes due to the asymmetricity of the zigzag construction.
+  *)
+
+  Section ind_dataL.
+    Context (n : nat) (ind_indRn : indRn (S n)) (a : A).
+
+    Definition ind_pushcP : forall (c : {b : B & (R a b * (identity_zigzag_Q R a0 b (S n)))}), Pn (S n) a (glueQP (fst (pr2 c)) (S n) (snd (pr2 c)))
+      := fun c => (einv a (pr1 c) (fst (pr2 c)) (colimR (snd (pr2 c))) (ind_indRn (pr1 c) (snd (pr2 c)))).
+
+    Record pushout_ind_data_P : Type := {
+      ind_pushbP : (forall (p : identity_zigzag_P R a0 a n), Pn (S n) a (iotaP n p));
+      ind_pushaP : (forall (c : ({b : B | R a b} * (identity_zigzag_P R a0 a n))), pglue c # (ind_pushbP ((pushfP a n) c)) = ind_pushcP ((pushgP a n) c))
+    }.
+
+    (* Take the pushout *)
+    Definition pushout_ind_P_res (ind : pushout_ind_data_P) : (forall (p : identity_zigzag_P R a0 a (S n)), Pn (S n) a p).
+    Proof.
+      snrapply Pushout_ind.
+      - exact (ind_pushbP ind).
+      - exact ind_pushcP.
+      - exact (ind_pushaP ind).
+    Defined.
+
+  End ind_dataL.
+
+  (* The goal of this section is to represent the data needed to produce something of type [Rn (S n)] from something of type [Ln n] *)
+  Section ind_dataR.
+    Context (n : nat) (ind_indLn : indLn n) (b : B).
+
+    Definition ind_pushcQ : forall (c : {a : A & (R a b * (identity_zigzag_P R a0 a n))}), Qn (S n) b (gluePQ (fst (pr2 c)) n (snd (pr2 c)))
+      := fun c => (e (pr1 c) b (fst (pr2 c)) (colimL (snd (pr2 c))) (ind_indLn (pr1 c) (snd (pr2 c)))).
+
+    Record pushout_ind_data_Q : Type := {
+      ind_pushbQ : (forall (q : identity_zigzag_Q R a0 b n), Qn (S n) b (iotaQ n q));
+      ind_pushaQ : (forall (c : ({a : A | R a b} * (identity_zigzag_Q R a0 b n))), pglue c # (ind_pushbQ ((pushfQ b n) c)) = ind_pushcQ ((pushgQ b n) c))
+    }.
+
+    (* Take the pushout *)
+    Definition pushout_ind_Q_res (ind : pushout_ind_data_Q) : (forall (q : identity_zigzag_Q R a0 b (S n)), Qn (S n) b q).
+    Proof.
+      snrapply Pushout_ind.
+      - exact (ind_pushbQ ind).
+      - exact ind_pushcQ.
+      - exact (ind_pushaQ ind).
+    Defined.
+  End ind_dataR.
 
   (** The following is garbage: *)
     (*
