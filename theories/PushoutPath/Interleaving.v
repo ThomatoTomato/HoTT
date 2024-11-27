@@ -360,6 +360,36 @@ Proof.
     Open Scope long_path_scope.
     unfold functor_Colimit_succ_half.
     unfold functor_Colimit_half.
+    rewrite concat_pp_p.
+    rewrite concat_p_Vp.
+    rewrite <- 2 ap_V.
+    rewrite 2 inv_V.
+    rewrite <- ap_pp.
+    unfold comm_square_comp.
+    rewrite inv_pp.
+    rewrite concat_pp_p.
+    rewrite concat_Vp.
+    rewrite concat_p1.
+    rewrite <- ap_V.
+    rewrite <- ap_compose.
+    rewrite concat_pp_p.
+    nrapply moveL_Vp.
+    rewrite (ap_compose _ _ (colimp i (S i) idpath x)).
+    rewrite Colimit_rec_beta_colimp.
+    unfold Colimit_succ.
+    simpl.
+    rewrite ap_pp.
+    rewrite Colimit_rec_beta_colimp.
+    rewrite <- ap_compose.
+    simpl.
+    unfold comm_square_comp.
+    simpl.
+    rewrite concat_p1.
+    rewrite !concat_p_pp.
+    rewrite <- (concat_Ap (fun t => ap (inj A i.+3%nat) (DiagramMap_comm g idpath t)) (DiagramMap_comm f idpath x)^).
+    rewrite 3 ap_V.
+    rewrite concat_pp_V.
+    unfold DiagramMap_comm.
     Close Scope long_path_scope.
 Admitted.
 
