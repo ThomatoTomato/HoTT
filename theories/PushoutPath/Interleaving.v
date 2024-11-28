@@ -360,7 +360,36 @@ Proof.
     Open Scope long_path_scope.
     unfold functor_Colimit_succ_half.
     unfold functor_Colimit_half.
+    rewrite concat_pp_p, concat_p_Vp.
+    rewrite <- 2 ap_V, 2 inv_V, <- ap_pp.
+    unfold comm_square_comp.
+    rewrite inv_pp.
+    rewrite concat_pp_p, concat_Vp, concat_p1.
+    rewrite <- ap_V, <- ap_compose, concat_pp_p.
+    nrapply moveL_Vp.
+    rewrite (ap_compose _ _ (colimp i (S i) idpath x)).
+    rewrite Colimit_rec_beta_colimp.
+    unfold Colimit_succ.
+    simpl.
+    rewrite ap_pp.
+    rewrite Colimit_rec_beta_colimp.
+    rewrite <- ap_compose.
+    simpl.
+    unfold comm_square_comp.
+    simpl.
+    rewrite concat_p1, !concat_p_pp.
+    rewrite <- (concat_Ap (fun t => ap (inj A i.+3%nat) (DiagramMap_comm g idpath t)) (DiagramMap_comm f idpath x)^).
+    rewrite !ap_V, concat_pp_V.
+    nrapply moveL_pM.
+    rewrite <- (ap_V (fun x0 : B i.+2%nat => inj A i.+2%nat (g i.+1%nat x0)) _).
+    rewrite <- (ap_V (fun x0  => inj A i.+3%nat (g i.+1%nat x0) ^+) (DiagramMap_comm f idpath x)).
+    rewrite ap_compose.
+    rewrite (@thelemma _ A i.+2%nat i.+3%nat idpath _ _ (ap (g i.+1%nat) (DiagramMap_comm f idpath x)^)).
     Close Scope long_path_scope.
+    rewrite !ap_V.
+    apply (ap (fun p => p^)).
+    rewrite <- !ap_compose.
+    by apply ap.
 Admitted.
 
 
