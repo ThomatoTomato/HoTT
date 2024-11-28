@@ -394,6 +394,5 @@ Definition thelemma {G : Graph} {D : Diagram G} {i j : G} (f : G i j) {x y : D i
     = (ap (colim j) (ap (D _f f) p)).
 Proof.
   rhs apply (ap_compose (D _f f) (colim j) p)^.
-  rhs apply (ap_homotopic (colimp i j f) p).
-  reflexivity.
+  by rhs apply (ap_homotopic (colimp i j f) p).
 Defined.
