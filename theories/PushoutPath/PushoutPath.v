@@ -371,174 +371,76 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
     Defined.
   End ind_dataR.
 
-  (** The following is garbage: *)
-    (*
-
-  Record zigzag_identity_record (n : nat) : Type := {
-    indR (b : B) (q : identity_zigzag_Q R a0 b n) : Q b (colimR q);
-    indL (a : A) (p : identity_zigzag_P R a0 a n) : P a (colimL p);
-  }.
-  
-  Definition zigzag_identity_ind (n : nat) : zigzag_identity_record n.
+  Definition indL_step (n : nat) (a : A) (indLp : indLn n) 
+    (indRp_data : forall (b : B), pushout_ind_data_Q n indLp b)
+    : pushout_ind_data_P n (fun b => pushout_ind_Q_res n indLp b (indRp_data b)) a.
   Proof.
-    induction n.
-    + snrapply Build_zigzag_identity_record.
-      - intros b [].
-      - intros a p; destruct p; exact refl.
-    + destruct IHn as [indRp indLp].
-      snrapply Build_zigzag_identity_record.
-      - 
+    pose (indRp := fun b => pushout_ind_Q_res n indLp b (indRp_data b)).
+    snrapply (Build_pushout_ind_data_P n indRp a).
+    - intro p.
+      apply (transport (fun z => P a z) (colimpL p)^).
+      exact (indLp a p).
+    - intros [[b r] p].
+
+      transparent assert (bigindLp : (forall (c : {a' : A | (R a' b) * (identity_zigzag_P R a0 a' n)}), {a' : A | (R a' b) * {p'' : identity_zigzag_P R a0 a' n & Pn n a' p''}})). {
+        intros [a' [r' p']].
+        exact (a' ; (r' , (p' ; indLp a' p'))).
+      }
+
+      transparent assert (bige : (forall (c : {a' : A | (R a' b) * {p'' : identity_zigzag_P R a0 a' n & Pn n a' p''}}), Qn (S n) b (gluePQ (fst (pr2 c)) n (pr1 (snd (pr2 c)))))). {
+        intros [a' [r' [p'' z]]].
+        exact (e a' b r' (colimL p'') z).
+      }
+
+      transparent assert (bigindRp : (forall (q : identity_zigzag_Q R a0 b (S n)), Qn (S n) b q)). {
+        intro q.
+        exact (indRp b q).
+      }
+
+      transparent assert (bigglue : (forall (c : {a' : A | (R a' b) * (identity_zigzag_P R a0 a' n)}), (identity_zigzag_Q R a0 b (S n)))). {
+        exact pushr.
+      }
+
+      (** The top right square commutes judgementally! *)
+      transparent assert (please : (forall (c : {a' : A | (R a' b) * (identity_zigzag_P R a0 a' n)}), bigindRp (bigglue c) = bige (bigindLp c))). {
+        intro c.
+        reflexivity.
+      }
+
+      transparent assert (incl : ((identity_zigzag_P R a0 a n) -> {a' : A | (R a' b) * (identity_zigzag_P R a0 a' n)})). {
+        intro p'.
+        exact (a ; (r , p')).
+      }
+
+      (** The top left triangle commutes judgementally! *)
+      transparent assert (please2 : (forall (p' : identity_zigzag_P R a0 a n), bigglue (incl p) = (gluePQ r n p))). {
+        intro p'.
+        reflexivity.
+      }
+
+      (** The whole top commutes judgementally! *)
+      transparent assert (please3 : (forall (p' : identity_zigzag_P R a0 a n), bigindRp (gluePQ r n p') = bige (bigindLp (incl p')))). {
+        intro p'.
+        reflexivity.
+      }
+      change (ind_pushcP n indRp a (pushgP a n ((b; r), p))) with (einv a b r (@colimR b (S n) (gluePQ r n p)) (bige (bigindLp (incl p)))).
+      simpl pushfP.
+      rhs apply (finv_f (equiv_identity_zigzag_glueinf R a0 r) (e a b r) (colimL p) (pr2 (snd (pr2 (bigindLp (incl p)))))).
+
+      (*transport (fun y => P a y)
+  (eissect (equiv_identity_zigzag_glueinf R a0 r) (colimL p))^
+         (snd (bigindLp (incl p)).2).2 *)
 
 
-  (*
-  (** The equivalence involving the inverse gluing map. *)
-  Let einvr : forall (a : A) (b : B) (r : R a b) (n : nat) (q : identity_zigzag_Q R a0 b n), Q b (colimR q) <~> P a (identity_zigzag_glueQPinf R a0 r (colimR q)).
-  Proof.
-    intros a b r' n q.
-    symmetry.
-    transitivity (Q b (identity_zigzag_gluePQinf R a0 r' (identity_zigzag_glueQPinf R a0 r' (colimR q)))).
-    + exact (e a b r' (identity_zigzag_glueQPinf R a0 r' (colimR q))).
-    + nrapply (equiv_transport (fun x => Q b x) _).
-      exact ((ap _ (identity_zigzag_glueQPQ R a0 r' n q)^) @ (@colimp _ (identity_zigzag_Q R a0 b) n (S n) idpath q)).
-  Defined.
+      (*Let einv (a : A) (b : B) (r : R a b) (q : identity_zigzag_Qinf R a0 b) : Q b q <~> P a (identity_zigzag_glueQPinf R a0 r q)
+         := finv (equiv_identity_zigzag_glueinf R a0 r) (e a b r) q. *)
+      (**
 
-  Let einve : forall (a : A) (b : B) (r : R a b) (n : nat) (p : identity_zigzag_P R a0 a n), (einv a b r (S n) (gluePQ r n p)) o (e a b r (colimL p)) == (@transport _ 
-    (fun y => P a y) 
-    (colimL p) 
-    (colimL (glueQP r (S n) (gluePQ r n p))) 
-    ((@colimp _ (identity_zigzag_P R a0 a) n (S n) idpath p)^ 
-      @ (ap colimL (identity_zigzag_gluePQP R a0 r n p)))).
-  Proof.
-    intros a b r n p x.
-    unfold einv.
-    simpl.
-    snrapply (moveR_equiv_V' (e a b r _)).
-    Open Scope long_path_scope.
-    rewrite ap_V.
-    rewrite <- inv_pp.
-    (**
-
-transport 
-   (fun y => Q b y)
-   ((ap (colimR n+2)
-       (glueQPQ n.+1 (gluePQ r n p))^)
-    @ colimp n.+1 (gluePQ r n p))^
-   (e a b r (colimL p) x)
-
-       ((colimp n+1 (gluePQ r n p))
-        @ (ap (colimR n+2) (glueQPQ n+1 (gluePQ r n p))))^
-
-= 
-
-e a b r (colimL (glueQP (gluePQ p)))
-  (transport
-     (fun y => P a y)
-     ((colimp n p)^
-      @ ap colimL (gluePQP n p))
-     x)
-     *)
-    
-    (*Let einve : forall (a : A) (b : B) (r : R a b) (n : nat) (p : identity_zigzag_P R a0 a n), (einv a b r n (identity_zigzag_gluePQinf R a0 r (colimL p))) o (e a b r (colimL p)) == transport (fun y => P a y) (colimp
-     *)
-  (* Record zigzag_identity_record (n : nat) : Type := {
-    indR (b : B) (q : identity_zigzag_Q R a0 b n) : Q b (colimR q);
-    indL (a : A) (p : identity_zigzag_P R a0 a n) : P a (colimL p);
-  }.
-  
-  Definition zigzag_identity_ind (n : nat) : zigzag_identity_record n.
-  Proof.
-    induction n.
-    + snrapply Build_zigzag_identity_record.
-      - intros b [].
-      - intros a p; destruct p; exact r.
-    + destruct IHn as [indRp indLp].
-      snrapply Build_zigzag_identity_record.
-      - intro b.
-        snrapply Pushout_ind.
-        * (* Construct a map (p : a0 ~>n b) -> Q b (colim q^+) using indRp *)
-          intro q.
-          simpl.
-          snrapply (transport (fun y => Q b y)). 
-          1: exact (colimR q). 
-          1: exact (@colimp _ (identity_zigzag_Q R a0 b) n (S n) idpath q)^.
-          exact (indRp b q).
-        * (* Construct a map (q : a0 ~>n+1 a) -> Q b (colim (p * r')) using indLp *)
-          intros [a [r' p]].
-          rapply (e a b r' (colimL p)).
-          exact (indLp a p).
-        * intros [[a r'] q].
-          simpl.
-          (*
-transport
-  (fun w : (identity_zigzag ?n?)  => Q b (colimR w))
-  (pglue ((a; r'), q))
-  (transport (fun y => Q b y) (colimp n n.+1%nat 1 q)^ (indRp b q))
-
-=
-
-e a b r'
-  (colimL (glueQP R _ b a r' q))
-  (indLp a (glueQP R _ b a r' q))
-           *)
+transport (Pn n.+1 a) (pglue ((b; r), p))
+  (transport (fun z => P a z)
+     (colimpL p)^ (indLp a p)) =
+einv a b r (colimR (gluePQ r n p)) (bige (bigindLp (incl p)))
+       *)
+    Admitted.
       
-  Admitted.
-  
-  Definition indR0 (b : B) (q : identity_zigzag_Q R a0 b 0%nat) : Q b (colimR q).
-  Proof.
-    destruct q.
-  Defined.
-
-  Definition indL0 (a : A) (p : identity_zigzag_P R a0 a 0%nat) : P a (colimL p).
-  Proof.
-    destruct p.
-    exact r.
-  Defined.
-
-  Definition indR1 (b : B) (q : identity_zigzag_Q R a0 b 1%nat) : Q b (colimR q).
-  Proof.
-    generalize q.
-    snrapply Pushout_ind.
-    - intro q'.
-      destruct q'.
-    - intros  [a [r' p]].
-      rapply (e a b r' (@colimL a 0%nat p)).
-      exact (indL0 a p).
-    - intros [[a r'] q'].
-      simpl.
-      destruct q'.
-  Defined.
-
-  Definition indL1 (a : A) (p : identity_zigzag_P R a0 a 1%nat) : P a (colimL p).
-  Proof.
-    generalize p.
-    snrapply Pushout_ind.
-    - intro p'.
-      simpl.
-      snrapply (transport (fun y => P a y)).
-      1: exact (@colimL a 0%nat p').
-      1: exact (@colimp _ (identity_zigzag_P R a0 a) 0%nat 1%nat idpath p')^.
-      exact (indL0 a p').
-    - intros [b [r' q]].
-      simpl.
-      rapply (einv a b r' 1 q).
-      exact (indR1 b q).
-    - intros [[b r'] p'].
-      unfold dot_step.
-      simpl fst.
-      simpl snd.
-      simpl indR1.
-      Check (einv a b r' 1 (pushr (a; (r', p'))) (e a b r' (@colimL _ 0 p') (indL0 a p'))).
-transport
-  (fun w => P a (colimL w)) 
-  (pglue ((b; r'), p'))
-  (transport (fun y => P a y)
-     (colimp 0%nat 1%nat 1 p')^ 
-     (indL0 a p'))
-
-    =
-
-einv a b r' 1 (pushr (a; (r', p'))) (e a b r' (colimL p') (indL0 a p'))
-
-*)*)*)
-    
 End ZigzagIdentity.
