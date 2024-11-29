@@ -390,7 +390,7 @@ Proof.
     apply (ap (fun p => p^)).
     rewrite <- !ap_compose.
     by apply ap.
-Admitted.
+Defined.
 
 
 (** Given families of maps [f n : A n -> B n] and [g : B n -> A (n + 1)] with homotopies showing that they form zigzags, construct the actual diagram maps and show that their composition is equal to the successor diagram map. *)
@@ -530,4 +530,52 @@ Section Interleaving.
     + exact zigzag_glue_map_inv_inf.
     + exact zigzag_glue_map_isequiv.
   Defined.
+
+  Context (n : nat).
+
+  Definition zigzag_comp_eisretr (a : A n) : (eisretr equiv_zigzag_glue (@colim _ A n a)) = (ap (@colim _ A n.+1%nat) (U n a)^) @ (@colimp _ A n _ _ a).
+  Proof.
+    simpl eisretr.
+    unfold pointwise_paths_concat.
+    simpl functor_Colimit_half_compose.
+    simpl functor_Colimit_half_homotopy.
+    simpl Colimit_succ_map_is_idmap.
+    by lhs nrapply concat_1p.
+  Defined.
+
+  Definition zigzag_comp_eissect (b : B n) : (eissect equiv_zigzag_glue (@colim _ B n b)) = (ap (@colim _ B n.+1%nat) (L n b)^) @ (@colimp _ B n _ _ b).
+  Proof.
+  Admitted.
+    (*   simpl.
+    unfold thething.
+    simpl.
+    unfold pointwise_paths_concat.
+    simpl.
+    Open Scope long_path_scope.
+    rewrite ! concat_1p.
+    rewrite ! ap_pp.
+    rewrite ! concat_p_pp.
+    unfold zigzag_glue_map_inf.
+    unfold zigzag_glue_map_inv_inf.
+    unfold functor_Colimit.
+    rewrite ! (Colimit_rec_beta_colimp).
+    rewrite <- (ap_compose _ (functor_Colimit_half d (cocone_colimit B)) _).
+    simpl functor_Colimit_half.
+    rewrite ! concat_p_pp.
+    rewrite ! ap_V.
+    rewrite ! ap_pp.
+    rewrite ! ap_V.
+    rewrite ! ap_pp.
+    rewrite ! ap_V.
+    rewrite ! ap_pp.
+    rewrite ! ap_V.
+    rewrite ! inv_pp.
+    rewrite ! concat_p_pp.
+       Close Scope long_path_scope. *)
+
+
+
+    
+
+
 End Interleaving.

@@ -52,7 +52,7 @@ End InductiveStep.
 Section Sequence.
   Context {A B : Type} (R : A -> B -> Type) (a0 : A).
 
-  (** Use a record type for a full step to avoid the interleaved sequence and [flip R]. *)
+(** Use a record type for a full step to avoid the interleaved sequence and [flip R]. *)
   (* jdc: rename to Zig? *)
   Record zigzag_type : Type := {
     P : Family A;
@@ -116,7 +116,7 @@ Section Sequence.
   Defined.
 
   Definition identity_zigzag_glueQP {a : A} {b : B} (r : R a b) 
-    : DiagramMap (identity_zigzag_Q b) (identity_zigzag_P a).
+: DiagramMap (identity_zigzag_Q b) (identity_zigzag_P a).
   Proof.
     snrapply Build_DiagramMap.
     - intro n; exact (concatQP (identity_zigzag n) b a r).
@@ -371,6 +371,16 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
     Defined.
   End ind_dataR.
 
+
+
+  Definition transportlemma {X X' Y : Type} (f : X -> X') (g : X -> Y) (g' : X' -> Y) (Z : Y -> Type) {x : X} {y : X'} (p : f x = y) (q : g x = g' (f x)) : (fun z => (transport (Z o g') p (transport Z q z))) == (transport Z (q @ ap g' p)).
+  Proof.
+    destruct p.
+    simpl.
+    intro z.
+    by rhs apply (ap (fun a => transport Z a z) (concat_p1 q)).
+  Defined.
+
   Definition indL_step (n : nat) (a : A) (indLp : indLn n) 
     (indRp_data : forall (b : B), pushout_ind_data_Q n indLp b)
     : pushout_ind_data_P n (fun b => pushout_ind_Q_res n indLp b (indRp_data b)) a.
@@ -427,20 +437,28 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
       simpl pushfP.
       rhs apply (finv_f (equiv_identity_zigzag_glueinf R a0 r) (e a b r) (colimL p) (pr2 (snd (pr2 (bigindLp (incl p)))))).
 
-      (*transport (fun y => P a y)
-  (eissect (equiv_identity_zigzag_glueinf R a0 r) (colimL p))^
-         (snd (bigindLp (incl p)).2).2 *)
+      (* FIXME: This hangs Coq *)
+      (*rhs apply (transport2 (fun y => P a y) (inverse2 (zigzag_comp_eissect (identity_zigzag_glueQP R a0 r) (identity_zigzag_gluePQ R a0 r) (identity_zigzag_glueQPQ R a0 r) (identity_zigzag_gluePQP R a0 r) n p)) (snd (bigindLp (incl p)).2).2). *)
 
-
-      (*Let einv (a : A) (b : B) (r : R a b) (q : identity_zigzag_Qinf R a0 b) : Q b q <~> P a (identity_zigzag_glueQPinf R a0 r q)
-         := finv (equiv_identity_zigzag_glueinf R a0 r) (e a b r) q. *)
-      (**
-
-transport (Pn n.+1 a) (pglue ((b; r), p))
-  (transport (fun z => P a z)
+      (* This is the rest of the proof, if the previous line compiles *)
+      transparent assert (term : (transport (Pn n.+1 a) (pglue ((b; r), p))
+  (transport (fun z : identity_zigzag_family_half a0 (pushl a) => P a z)
      (colimpL p)^ (indLp a p)) =
-einv a b r (colimR (gluePQ r n p)) (bige (bigindLp (incl p)))
-       *)
+       transport (fun y : identity_zigzag_family_half a0 (pushl a) => P a y)
+         (ap (inj (identity_zigzag_P R a0 a) n.+1%nat)
+            (identity_zigzag_gluePQP R a0 r n p)^ @ 
+          colimpL p)^ (snd (bigindLp (incl p)).2).2)). {
+            unfold identity_zigzag_gluePQP.
+            unfold homotopy_step.
+            cbn.
+            rewrite inv_pV.
+            rewrite ap_V.
+            rewrite inv_V.
+            cbn.
+            change (identity_zigzag_family_half a0 (pushl a)) with (identity_zigzag_Pinf R a0 a).
+            refine ((transportlemma _ (@colimL a n) (@colimL a (S n)) (fun y => P a y) (pglue ((b ; r), p)) (@colimpL a n p)^ (indLp a p)) @ _).
+            by rewrite inv_V.
+          }
     Admitted.
       
 End ZigzagIdentity.
