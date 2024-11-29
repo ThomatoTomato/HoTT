@@ -169,6 +169,9 @@ Section Sequence.
     unfold equiv_identity_zigzag_glueinf.
     reflexivity.
   Defined.
+
+  Definition identity_zigzag_comp_eissect (n : nat) (p : identity_zigzag_P a n) : (eissect equiv_identity_zigzag_glueinf (@colim _ (identity_zigzag_P a) n p)) = (ap (@colim _ (identity_zigzag_P a) (S n)) (identity_zigzag_gluePQP r n p)^) @ (@colimp _ (identity_zigzag_P a) n _ _ p)
+    := zigzag_comp_eissect (identity_zigzag_glueQP r) (identity_zigzag_gluePQ r) (identity_zigzag_glueQPQ r) (identity_zigzag_gluePQP r) n p.
 End Sequence.
 
 Section InverseEquivCoh.
@@ -437,28 +440,26 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
       simpl pushfP.
       rhs apply (finv_f (equiv_identity_zigzag_glueinf R a0 r) (e a b r) (colimL p) (pr2 (snd (pr2 (bigindLp (incl p)))))).
 
-      (* FIXME: This hangs Coq *)
-      (*rhs apply (transport2 (fun y => P a y) (inverse2 (zigzag_comp_eissect (identity_zigzag_glueQP R a0 r) (identity_zigzag_gluePQ R a0 r) (identity_zigzag_glueQPQ R a0 r) (identity_zigzag_gluePQP R a0 r) n p)) (snd (bigindLp (incl p)).2).2). *)
-
-      (* This is the rest of the proof, if the previous line compiles *)
-      transparent assert (term : (transport (Pn n.+1 a) (pglue ((b; r), p))
-  (transport (fun z : identity_zigzag_family_half a0 (pushl a) => P a z)
-     (colimpL p)^ (indLp a p)) =
-       transport (fun y : identity_zigzag_family_half a0 (pushl a) => P a y)
+      transitivity (transport (fun y : identity_zigzag_family_half a0 (pushl a) => P a y)
          (ap (inj (identity_zigzag_P R a0 a) n.+1%nat)
             (identity_zigzag_gluePQP R a0 r n p)^ @ 
-          colimpL p)^ (snd (bigindLp (incl p)).2).2)). {
-            unfold identity_zigzag_gluePQP.
-            unfold homotopy_step.
-            cbn.
-            rewrite inv_pV.
-            rewrite ap_V.
-            rewrite inv_V.
-            cbn.
-            change (identity_zigzag_family_half a0 (pushl a)) with (identity_zigzag_Pinf R a0 a).
-            refine ((transportlemma _ (@colimL a n) (@colimL a (S n)) (fun y => P a y) (pglue ((b ; r), p)) (@colimpL a n p)^ (indLp a p)) @ _).
-            by rewrite inv_V.
-          }
+          colimpL p)^ (snd (bigindLp (incl p)).2).2).
+      + unfold identity_zigzag_gluePQP.
+        unfold homotopy_step.
+        cbn.
+        rewrite inv_pV.
+        rewrite ap_V.
+        rewrite inv_V.
+        cbn.
+        change (identity_zigzag_family_half a0 (pushl a)) with (identity_zigzag_Pinf R a0 a).
+        refine ((transportlemma _ (@colimL a n) (@colimL a (S n)) (fun y => P a y) (pglue ((b ; r), p)) (@colimpL a n p)^ (indLp a p)) @ _).
+        by rewrite inv_V.
+      + change (identity_zigzag_family_half a0 (pushl a)) with (identity_zigzag_Pinf R a0 a).
+        apply (ap (fun z => transport (P a) z (snd (bigindLp (incl p)).2).2)).
+        lhs apply (ap (fun z => z^) (identity_zigzag_comp_eissect R a0 r n p))^.
+        change (inj (identity_zigzag_P R a0 a) n p) with (colimL p).
+        (* FIXME: This hangs Coq: *)
+        (*reflexivity.*)
     Admitted.
       
 End ZigzagIdentity.
