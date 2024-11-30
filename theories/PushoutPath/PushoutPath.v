@@ -86,7 +86,7 @@ Section Sequence.
   Definition identity_zigzag : nat -> zigzag_type
     := fun n => nat_iter n zigzag_step identity_zigzag_initial.
 
-  Definition identity_zigzag_P : A -> Sequence.
+Definition identity_zigzag_P : A -> Sequence.
   Proof.
     intro a.
     snrapply Build_Sequence.
@@ -172,6 +172,10 @@ Section Sequence.
 
   Definition identity_zigzag_comp_eissect (n : nat) (p : identity_zigzag_P a n) : (eissect equiv_identity_zigzag_glueinf (@colim _ (identity_zigzag_P a) n p)) = (ap (@colim _ (identity_zigzag_P a) (S n)) (identity_zigzag_gluePQP r n p)^) @ (@colimp _ (identity_zigzag_P a) n _ _ p)
     := zigzag_comp_eissect (identity_zigzag_glueQP r) (identity_zigzag_gluePQ r) (identity_zigzag_glueQPQ r) (identity_zigzag_gluePQP r) n p.
+
+  Definition identity_zigzag_comp_eisretr (n : nat) (q : identity_zigzag_Q b n) : (eisretr equiv_identity_zigzag_glueinf (@colim _ (identity_zigzag_Q b) n q)) = (ap (@colim _ (identity_zigzag_Q b) (S n)) (identity_zigzag_glueQPQ r n q)^) @ (@colimp _ (identity_zigzag_Q b) n _ _ q)
+    := zigzag_comp_eisretr (identity_zigzag_glueQP r) (identity_zigzag_gluePQ r) (identity_zigzag_glueQPQ r) (identity_zigzag_gluePQP r) n q.
+
 End Sequence.
 
 Section InverseEquivCoh.
@@ -306,7 +310,7 @@ Section ZigzagIdentity.
 
 <<
     
-                   pushg := (b, r, p) |-> (b, r, gluePQ n r p)                     (b, r) |-> (b, r, indR n+1 b)
+                   pushg := (b, r, gluePQ n r p)                                 (b, r, q, indR n+1 b q)
 
   (b : B)x(r : R a b)x(p : a0 ~>n a) -----> (b : B)x(r : R a b)x(q : a0 ~>n+1 b) ----------------------.
                |                                            |                                           \
@@ -314,10 +318,10 @@ Section ZigzagIdentity.
  pushf := pr3  |                                            | (b, r, q) |-> glueQP n+1 r q                \
                |                                            |                                              \
                v                                            v                                               v
-         (p : a0 ~>n A) ---------------------------> (p' : a0 ~>n+1 a)                      (b : B)x(r : R a b)xQn n+1 b q
+               (p : a0 ~>n A) ---------------------------> (p' : a0 ~>n+1 a)         (b : B)x(r : R a b)x(q : a0 ~>n+1 b)xQn n+1 b q
                 \                                                                                           |
                  \                iotaP                                                                     |
-                  \                                                                   (b, r) |-> e a b r    |
+                  \                                                                             inv a b r q |
                    \                                                                                        |
                     \                                                                                       v
                      \                                                                          Pn n+1 a (glueQP n+1 r q)
@@ -382,6 +386,35 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
     by rhs apply (ap (fun a => transport Z a z) (concat_p1 q)).
   Defined.
 
+  (* We have the following situation:
+
+<<
+    
+                                                                 (b, r, a', r', p', indL n a p)
+
+   (b : B)x(r : R a b)x(a' : A)x(r' : R a' b)x(p' : a0 ~>n a') -----------------> (b : B)x(r : R a b)x(a' : A)x(r' : R a' b)x(p' : a0 ~>n a')xPn n a' p
+                 ^                                     \                                                    |
+                / (b, r, a, r, p)                       \ (b, r, gluePQ n r' p')                            |
+               /                                         v                         (b, r, q, indR n+1 b q)  |
+  (b : B)x(r : R a b)x(p : a0 ~>n a) -----> (b : B)x(r : R a b)x(q : a0 ~>n+1 b) ------------.              |
+               |                                            |                                 \             | e a' b r' p'
+               |            (b, r, gluePQ n r p)            |                                  \            |
+ pushf := pr3  |                                            | glueQP n+1 r q                    \           |
+               |                                            |                                    \          |
+               v                                            v                                     v         v
+         (p : a0 ~>n A) ---------------------------> (p' : a0 ~>n+1 a)                      (b : B)x(r : R a b)x(q : a0 ~>n+1 b)xQn n+1 b q
+                \                                                                                           |
+                 \                iotaP                                                                     |
+                  \                                                                            einv a b r q |
+                   \                                                                                        |
+                    \                                                                                       v
+                     \                                                                          Pn n+1 a (glueQP n+1 r q)
+                      `--------------> Pn n+1 a p^+
+
+>> 
+
+  using the notation [a0 ~>m x] to mean either [identity_zigzag_P] or [identity_zigzag_Q] at index [m] (NOT using [m] as the "path length", i.e.~the real path length is [2*m] for P and [2*m-1] for Q. *)
+
   Definition indL_step (n : nat) (a : A) (indLp : indLn n) 
     (indRp_data : forall (b : B), pushout_ind_data_Q n indLp b)
     : pushout_ind_data_P n (fun b => pushout_ind_Q_res n indLp b (indRp_data b)) a.
@@ -389,42 +422,23 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
     pose (indRp := fun b => pushout_ind_Q_res n indLp b (indRp_data b)).
     snrapply (Build_pushout_ind_data_P n indRp a).
     - intro p.
+      (* The left map is exactly what it should be: the previous left induction followed by transport along [colimp]. This makes descent to the colimit immediate later on and MUST NOT BE CHANGED. *)
       apply (transport (fun z => P a z) (colimpL p)^).
       exact (indLp a p).
     - intros [[b r] p].
 
-      transparent assert (bigindLp : (forall (c : {a' : A | (R a' b) * (identity_zigzag_P R a0 a' n)}), {a' : A | (R a' b) * {p'' : identity_zigzag_P R a0 a' n & Pn n a' p''}})). {
-        intros [a' [r' p']].
-        exact (a' ; (r' , (p' ; indLp a' p'))).
-      }
+      (* Go on the top path of the diagram instead; using [pushout_ind_data_Q] ensures that this commutes judgementally. *)
+      change (ind_pushcP n indRp a (pushgP a n ((b; r), p))) 
+        with (einv a b r (@colimR b (S n) (gluePQ r n p)) (e a b r (colimL p) (indLp a p))).
 
-      transparent assert (bige : (forall (c : {a' : A | (R a' b) * {p'' : identity_zigzag_P R a0 a' n & Pn n a' p''}}), Qn (S n) b (gluePQ (fst (pr2 c)) n (pr1 (snd (pr2 c)))))). {
-        intros [a' [r' [p'' z]]].
-        exact (e a' b r' (colimL p'') z).
-      }
+      (* Compute the [einv o e] bit. *)
+      rhs apply (finv_f (equiv_identity_zigzag_glueinf R a0 r) (e a b r) (colimL p) (indLp a p)).
 
-      transparent assert (bigindRp : (forall (q : identity_zigzag_Q R a0 b (S n)), Qn (S n) b q)). {
-        intro q.
-        exact (indRp b q).
-      }
-
-      transparent assert (bigglue : (forall (c : {a' : A | (R a' b) * (identity_zigzag_P R a0 a' n)}), (identity_zigzag_Q R a0 b (S n)))). {
-        exact pushr.
-      }
-
-      transparent assert (incl : ((identity_zigzag_P R a0 a n) -> {a' : A | (R a' b) * (identity_zigzag_P R a0 a' n)})). {
-        intro p'.
-        exact (a ; (r , p')).
-      }
-
-      change (ind_pushcP n indRp a (pushgP a n ((b; r), p))) with (einv a b r (@colimR b (S n) (gluePQ r n p)) (bige (bigindLp (incl p)))).
-      simpl pushfP.
-      rhs apply (finv_f (equiv_identity_zigzag_glueinf R a0 r) (e a b r) (colimL p) (pr2 (snd (pr2 (bigindLp (incl p)))))).
-
+      (* Use the computation of [eissect equiv_identity_zigzag_glueinf]. *)
       transitivity (transport (fun y : identity_zigzag_family_half a0 (pushl a) => P a y)
          (ap (inj (identity_zigzag_P R a0 a) n.+1%nat)
             (identity_zigzag_gluePQP R a0 r n p)^ @ 
-          colimpL p)^ (snd (bigindLp (incl p)).2).2).
+          colimpL p)^ (indLp a p)).
       + unfold identity_zigzag_gluePQP.
         unfold homotopy_step.
         rewrite inv_pV.
@@ -434,7 +448,7 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
         refine ((transportlemma _ (@colimL a n) (@colimL a (S n)) (fun y => P a y) (pglue ((b ; r), p)) (@colimpL a n p)^ (indLp a p)) @ _).
         by rewrite inv_V.
       + change (identity_zigzag_family_half a0 (pushl a)) with (identity_zigzag_Pinf R a0 a).
-        apply (ap (fun z => transport (P a) z (snd (bigindLp (incl p)).2).2)).
+        apply (ap (fun z => transport (P a) z (indLp a p))).
         nrapply (ap (fun z => z^) (identity_zigzag_comp_eissect R a0 r n _))^.
     Defined.
 
@@ -442,7 +456,57 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
     (indLp_data : forall (a : A), pushout_ind_data_P n indRp a)
     : pushout_ind_data_Q (S n) (fun a => pushout_ind_P_res n indRp a (indLp_data a)) b.
   Proof.
-  Admitted.
+    pose (indLp := fun a => pushout_ind_P_res n indRp a (indLp_data a)).
+    snrapply (Build_pushout_ind_data_Q (S n) indLp b).
+    - intro q.
+      apply (transport (fun z => Q b z) (colimpR q)^).
+      exact (indRp b q).
+    - intros [[a r] q].
+
+      transparent assert (bigindRp : (forall (c : {b' : B | (R a b') * (identity_zigzag_Q R a0 b' (S n))}), {b' : B | (R a b') * {q'' : identity_zigzag_Q R a0 b' (S n) & Qn (S n) b' q''}})). {
+        intros [b' [r' q']].
+        exact (b' ; (r' , (q' ; indRp b' q'))).
+      }
+
+      transparent assert (bigeinv : (forall (c : {b' : B | (R a b') * {q'' : identity_zigzag_Q R a0 b' (S n) & Qn (S n) b' q''}}), Pn (S n) a (glueQP (fst (pr2 c)) (S n) (pr1 (snd (pr2 c)))))). {
+        intros [b' [r' [q'' z]]].
+        exact (einv a b' r' (colimR q'') z).
+      }
+
+      transparent assert (bigindLp : (forall (p : identity_zigzag_P R a0 a (S n)), Pn (S n) a p)). {
+        intro p.
+        exact (indLp a p).
+      }
+
+      transparent assert (bigglue : (forall (c : {b' : B | (R a b') * (identity_zigzag_Q R a0 b' (S n))}), (identity_zigzag_P R a0 a (S n)))). {
+        exact pushr.
+      }
+
+      transparent assert (incl : ((identity_zigzag_Q R a0 b (S n)) -> {b' : B | (R a b') * (identity_zigzag_Q R a0 b' (S n))})). {
+        intro q'.
+        exact (b ; (r , q')).
+      }
+
+      change (ind_pushcQ (S n) indLp b (pushgQ b (S n) ((a; r), q))) with (e a b r (@colimL a (S n) (glueQP r (S n) q)) (bigeinv (bigindRp (incl q)))).
+      simpl pushfP.
+      rhs apply (f_finv (equiv_identity_zigzag_glueinf R a0 r) (e a b r) (colimR q) (pr2 (snd (pr2 (bigindRp (incl q)))))).
+
+      transitivity (transport (fun y : identity_zigzag_family_half a0 (pushr b) => Q b y)
+         (ap (inj (identity_zigzag_Q R a0 b) n.+2%nat)
+            (identity_zigzag_glueQPQ R a0 r (S n) q)^ @ 
+          colimpR q)^ (snd (bigindRp (incl q)).2).2).
+      + unfold identity_zigzag_gluePQP.
+        unfold homotopy_step.
+        rewrite inv_pV.
+        rewrite ap_V.
+        rewrite inv_V.
+        change (identity_zigzag_family_half a0 (pushr b)) with (identity_zigzag_Qinf R a0 b).
+        refine ((transportlemma _ (@colimR b (S n)) (@colimR b n.+2) (fun y => Q b y) (pglue ((a ; r), q)) (@colimpR b (S n) q)^ (indRp b q)) @ _).
+        by rewrite inv_V.
+      + change (identity_zigzag_family_half a0 (pushr b)) with (identity_zigzag_Qinf R a0 b).
+        apply (ap (fun z => transport (Q b) z (snd (bigindRp (incl q)).2).2)).
+        nrapply (ap (fun z => z^) (identity_zigzag_comp_eisretr R a0 r (S n) _))^.
+  Defined.
 
   Definition double_ind_step (n : nat) (indLp : indLn n) (indRp_data : forall (b : B), pushout_ind_data_Q n indLp b) : {indL : indLn (S n) & (forall (b : B), pushout_ind_data_Q (S n) indL b)}.
   Proof.
@@ -491,25 +555,36 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
       exact (indL_seq a n pn).
     - intros n _ [] pn.
       induction n.
-      2: {
-        unfold indL_seq.
-        pose (indLp := pr1 (double_ind n)). 
-        pose (indRp_data := pr2 (double_ind n)).
-        simpl (double_ind n.+2).
-        simpl pr1.
-        change ((double_ind n).1) with indLp.
-        change ((double_ind n).2) with indRp_data.
+      + destruct pn.
         rewrite <- (transport_pp).
-        rewrite concat_Vp.
-        reflexivity.
-      }
-      
-      destruct pn.
-      unfold indL_seq.
-      simpl pr1.
-      rewrite <- (transport_pp).
-      rewrite concat_Vp.
-      reflexivity.
+        by rewrite concat_Vp.
+      + rewrite <- (transport_pp).
+        by rewrite concat_Vp.
   Defined.
 
+  Definition indR_colim (b : B) (q : identity_zigzag_Qinf R a0 b) : Q b q.
+  Proof.
+    snrapply Colimit_ind.
+    - intros n qn.
+      exact (indR_seq b n qn).
+    - intros n _ [] qn.
+      induction n.
+      + destruct qn.
+      + rewrite <- (transport_pp).
+        by rewrite concat_Vp.
+  Defined.
+
+  Definition indL_comp_refl : (indL_colim a0 (identity_zigzag_refl R a0)) = refl.
+  Proof.
+    reflexivity.
+  Defined.
+
+  Definition ind_comp_glue {a : A} {b : B} (r : R a b) (p : identity_zigzag_Pinf R a0 a) : indR_colim b (gluePQinf r p) = e a b r p (indL_colim a p).
+  Proof.
+    generalize p.
+    snrapply Colimit_ind.
+    - intros n pn.
+      reflexivity.
+    - intros n _ [] pn.
+  Admitted.
 End ZigzagIdentity.
