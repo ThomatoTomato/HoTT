@@ -554,12 +554,9 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
     - intros n pn.
       exact (indL_seq a n pn).
     - intros n _ [] pn.
-      induction n.
-      + destruct pn.
-        rewrite <- (transport_pp).
-        by rewrite concat_Vp.
-      + rewrite <- (transport_pp).
-        by rewrite concat_Vp.
+      unfold indL_seq; simpl.
+      lhs nrapply (transport_pp _ _ _ _)^.
+      by lhs nrapply (ap (fun z => transport (P a) z _) (concat_Vp _)).
   Defined.
 
   Definition indR_colim (b : B) (q : identity_zigzag_Qinf R a0 b) : Q b q.
@@ -570,8 +567,9 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
     - intros n _ [] qn.
       induction n.
       + destruct qn.
-      + rewrite <- (transport_pp).
-        by rewrite concat_Vp.
+      + unfold indR_seq; simpl.
+        lhs nrapply (transport_pp _ _ _ _)^.
+        by lhs nrapply (ap (fun z => transport (Q b) z _) (concat_Vp _)).
   Defined.
 
   Definition indL_comp_refl : (indL_colim a0 (identity_zigzag_refl R a0)) = refl.
@@ -587,5 +585,13 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
       reflexivity.
     - intros n _ [] pn.
       lhs nrapply (@transport_paths_FlFr_D _ _ (fun z => indR_colim b (gluePQinf r z)) (fun z => e a b r z (indL_colim a z)) _ _ (colimp n n.+1%nat idpath pn) idpath).
-  Admitted.
+      Open Scope long_path_scope.
+      rewrite ap_1.
+      rewrite concat_p1.
+      rewrite apD_compose.
+      change (indR_colim b (gluePQinf r (inj (identity_zigzag_P R a0 a) n.+1%nat pn ^+))) with (e a b r (colimL pn^+) (indL_colim a (colimL pn^+))).
+      change (gluePQinf r) with (functor_Colimit_half (zigzag_glue_map_inv (identity_zigzag_glueQP R a0 r) (identity_zigzag_gluePQ R a0 r) (identity_zigzag_glueQPQ R a0 r) (identity_zigzag_gluePQP R a0 r)) (Colimit_succ _)).
+
+      Fail rewrite (functor_Colimit_half_beta_colimp (zigzag_glue_map_inv (identity_zigzag_glueQP R a0 r) (identity_zigzag_gluePQ R a0 r) (identity_zigzag_glueQPQ R a0 r) (identity_zigzag_gluePQP R a0 r)) (Colimit_succ _) n (S n) idpath pn).
+      Admitted.
 End ZigzagIdentity.

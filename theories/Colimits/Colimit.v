@@ -203,6 +203,10 @@ Proof.
   refine (cocone_precompose m HQ).
 Defined.
 
+Definition functor_Colimit_half_beta_colimp {G : Graph} {D1 D2 : Diagram G} (m : DiagramMap D1 D2) {Q} (HQ : Cocone D2 Q) (i j : G) (g : G i j) (x : D1 i)
+  : (ap (functor_Colimit_half m HQ) (colimp i j g x)) = legs_comm (cocone_precompose m HQ) i j g x
+  := Colimit_rec_beta_colimp _ _ _ _ _ _.
+
 (** Homotopic diagram maps induce homotopic maps. *)
 Definition functor_Colimit_half_homotopy {G : Graph} {D1 D2 : Diagram G}
   {m1 m2 : DiagramMap D1 D2} (h : DiagramMap_homotopy m1 m2) 
