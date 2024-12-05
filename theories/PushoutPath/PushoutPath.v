@@ -579,12 +579,13 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
     reflexivity.
   Defined.
 
-  Definition ind_comp_glue {a : A} {b : B} (r : R a b) (p : identity_zigzag_Pinf R a0 a) : indR_colim b (gluePQinf r p) = e a b r p (indL_colim a p).
+  Definition ind_comp_glue `{Funext} {a : A} {b : B} (r : R a b) (p : identity_zigzag_Pinf R a0 a) : indR_colim b (gluePQinf r p) = e a b r p (indL_colim a p).
   Proof.
     generalize p.
     snrapply Colimit_ind.
     - intros n pn.
       reflexivity.
     - intros n _ [] pn.
+      lhs nrapply (@transport_paths_FlFr_D _ _ (fun z => indR_colim b (gluePQinf r z)) (fun z => e a b r z (indL_colim a z)) _ _ (colimp n n.+1%nat idpath pn) idpath).
   Admitted.
 End ZigzagIdentity.

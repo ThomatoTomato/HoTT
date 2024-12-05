@@ -396,3 +396,16 @@ Proof.
   rhs apply (ap_compose (D _f f) (colim j) p)^.
   by rhs apply (ap_homotopic (colimp i j f) p).
 Defined.
+
+Definition thelemma' {G : Graph} {D : Diagram G} {i j : G} (f : G i j) {x y : D i} (p : x = y)
+  : (colimp i j f x)^ @ (ap (colim j) (ap (D _f f) p)) @ (colimp i j f y) = (ap (colim i) p).
+Proof.
+  rewrite (ap_compose (D _f f) (colim j) p)^.
+  Open Scope long_path_scope.
+  snrapply (cancelL (colimp i j f x) _ _).
+  rewrite ! concat_p_pp.
+  rewrite concat_pV.
+  rewrite concat_1p.
+  apply (concat_Ap (fun z => colimp i j f z) p).
+Defined.
+

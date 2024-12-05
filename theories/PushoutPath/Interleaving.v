@@ -478,10 +478,10 @@ Section Interleaving.
     (U : forall (n : nat), (fun (x : A n) => x^+) == (g n) o (f n))
     (L : forall (n : nat), (fun (x : B n) => x^+) == (f (S n)) o (g n)).
 
+
   Let d := zigzag_glue_map f g U L.
 
   Let u := zigzag_glue_map_inv f g U L.
-  Check u.
   
   (* We need two equalities: [seq_to_succ_seq A = d o u] and 
   [seq_to_succ_seq B = (succ_seq_map_seq_map d) o u]. *)
@@ -494,34 +494,80 @@ Section Interleaving.
 
   (* Show that the gluing maps are equivalences on colimits using bi-invertible maps. *)
 
+  Local Definition Lfg_coherence (n : nat) (x : B n) : (L n.+1 (f n.+1 (g n x))) @ (ap ((f n.+2) o (g n.+1)) (L n x))^ @ (L (S n) x^+)^ = (ap (fun z => z^+) (L n x))^.
+  Proof.
+    Open Scope long_path_scope.
+    snrapply (cancelR _ _ (L n.+1 x^+)).
+    rewrite concat_pV_p.
+    rewrite <- ap_V.
+    (* The function can't be inferred here for whatever reason *)
+    rewrite <- (ap_V (fun x0 : B n.+1%nat => f n.+2 (g n.+1 x0)) (L n x)).
+    snrapply (concat_Ap _ _)^.
+  Qed.
+
+  Definition better_section : zigzag_glue_map_inf o zigzag_glue_map_inv_inf == idmap.
+  Proof.
+    snrapply Colimit_ind.
+    - intros n x.
+      simpl.
+      rhs apply (@colimp _ B n (S n) idpath x)^.
+      apply ap.
+      exact (L n x)^.
+    - intros n _ [] x.
+      simpl.
+      Open Scope long_path_scope.
+      rewrite 2 inv_V.
+      Check (@colim _ B n x).
+      Check (@colim _ B (S n) x^+).
+      lhs apply (@transport_paths_FlFr _ _ (zigzag_glue_map_inf o zigzag_glue_map_inv_inf) (idmap) (@colim _ B (S n) x^+) _ (colimp n _ _ x) (ap (colim _) (L n.+1 x ^+)^ @' @colimp _ B _ _ _ x ^+)).
+      rewrite ap_compose.
+      rewrite Colimit_rec_beta_colimp.
+      unfold cocone_precompose.
+      simpl.
+      rewrite ap_pp.
+      rewrite <- ap_compose.
+      simpl.
+      rewrite ap_V.
+      rewrite ap_pp.
+      rewrite Colimit_rec_beta_colimp.
+      unfold cocone_precompose.
+      simpl.
+      rewrite ! concat_p_pp.
+      rewrite ap_idmap.
+      rewrite ! ap_V.
+      rewrite ! ap_pp.
+      rewrite ! inv_pp.
+      rewrite ! concat_p_pp.
+      rewrite ! inv_V.
+      rewrite 2 (ap_compose (f n.+2%nat) _).
+      rewrite ap_V.
+      rewrite concat_pV_p.
+      rewrite <- (ap_compose (g n.+1%nat) (f n.+2%nat)).
+      rewrite <- 2 ap_V.
+      rewrite <- ap_p_pp.
+      rewrite <- ap_p_pp.
+      rewrite concat_p_pp.
+      rewrite (Lfg_coherence n x).
+      rewrite ap_V.
+      apply (ap (fun z => z @ (colimp n (S n) idpath x))).
+      rewrite <- (inv_V (cglue _)).
+      rewrite <- 3 ap_V.
+      snrapply (@thelemma' _ B _ _ idpath (f n.+1 (g n x)) (x^+) (L n x)^).
+      Close Scope long_path_scope.
+  Defined.
+
   (*Definition zigzag_glue_map_tri : DiagramMap_homotopy (diagram_comp zigzag_glue_map_inv zigzag_glue_map) (seq_to_succ_seq A).*)
   Definition zigzag_glue_map_isequiv : IsEquiv zigzag_glue_map_inv_inf.
   Proof.
-    snrapply isequiv_biinv'.
-    rapply pair.
-    - (* The section is [Interme] applied to the successor sequence *)
-      (* Shift the data by one half step *)
-      pose (f':=g).
-      pose (g':=(fun n => f (S n))).
-      pose (U':=L).
-      pose (L':=(fun n => U (S n))).
-      (* Coq can't guess `succ_seq A` here *)
-      pose (theinv:= (@zigzag_glue_map_inv B (succ_seq A) f' g' U' L')).
-      exists (functor_Colimit_succ_half theinv (Colimit_succ B)).
-      unfold zigzag_glue_map_inv_inf.
-      Check (thething u theinv).
-      intro x.
-      lhs apply (thething u theinv x).
-      lhs apply (functor_Colimit_half_homotopy (@zigzag_glue_map_tri B (succ_seq A) f' g' U' L') (Colimit_succ B) x).
-      revert x.
-      exact (Colimit_succ_map_is_idmap B).
-    - exists zigzag_glue_map_inf.
-      transitivity (functor_Colimit_half (diagram_comp u d) (Colimit_succ A)).
+    snrapply isequiv_adjointify.
+    - exact zigzag_glue_map_inf.
+    - transitivity (functor_Colimit_half (diagram_comp u d) (Colimit_succ A)).
       + symmetry.
         exact (functor_Colimit_half_compose d u (Colimit_succ A)).
       + transitivity (functor_Colimit_half (seq_to_succ_seq A) (Colimit_succ A)).
         * exact (functor_Colimit_half_homotopy (zigzag_glue_map_tri f g U L) (Colimit_succ A)).
         * exact (Colimit_succ_map_is_idmap A).
+    - exact better_section.
   Defined.
 
   Definition equiv_zigzag_glue : Colimit B <~> Colimit A.
@@ -545,37 +591,68 @@ Section Interleaving.
 
   Definition zigzag_comp_eissect (b : B n) : (eissect equiv_zigzag_glue (@colim _ B n b)) = (ap (@colim _ B n.+1%nat) (L n b)^) @ (@colimp _ B n _ _ b).
   Proof.
-  Admitted.
-    (*   simpl.
-    unfold thething.
+    Open Scope long_path_scope.
     simpl.
     unfold pointwise_paths_concat.
     simpl.
-    Open Scope long_path_scope.
-    rewrite ! concat_1p.
-    rewrite ! ap_pp.
+    rewrite concat_1p.
     rewrite ! concat_p_pp.
-    unfold zigzag_glue_map_inf.
-    unfold zigzag_glue_map_inv_inf.
-    unfold functor_Colimit.
-    rewrite ! (Colimit_rec_beta_colimp).
-    rewrite <- (ap_compose _ (functor_Colimit_half d (cocone_colimit B)) _).
-    simpl functor_Colimit_half.
+    rewrite inv_V.
+    rewrite ap_V.
+    rewrite ap_pp.
+    rewrite <- (ap_compose _ zigzag_glue_map_inv_inf).
+    simpl.
+    rewrite ap_V.
+    rewrite ap_pp.
+    rewrite inv_pp.
+    rewrite Colimit_rec_beta_colimp.
+    rewrite ap_pp.
     rewrite ! concat_p_pp.
+    rewrite <- (ap_compose _ zigzag_glue_map_inf).
+    simpl.
+    rewrite Colimit_rec_beta_colimp.
+    unfold legs_comm; simpl.
     rewrite ! ap_V.
     rewrite ! ap_pp.
-    rewrite ! ap_V.
-    rewrite ! ap_pp.
-    rewrite ! ap_V.
-    rewrite ! ap_pp.
-    rewrite ! ap_V.
+    rewrite Colimit_rec_beta_colimp.
+    unfold legs_comm; simpl.
+    rewrite ! concat_p_pp.
     rewrite ! inv_pp.
+    rewrite ! ap_pp.
     rewrite ! concat_p_pp.
-       Close Scope long_path_scope. *)
-
-
-
-    
-
-
+    rewrite ! inv_pp.
+    rewrite ! inv_V.
+    rewrite ! concat_p_pp.
+    rewrite ! ap_V.
+    rewrite <- 2 (ap_compose (fun x => @colim _ A n.+2%nat x) zigzag_glue_map_inf).
+    simpl.
+    rewrite ! inv_V.
+    rewrite <- (ap_compose (fun x => @colim _ A n.+2%nat (g n.+1%nat x)) zigzag_glue_map_inf).
+    rewrite (ap_compose (f n.+2) _).
+    simpl.
+    rewrite ! concat_pp_p.
+    rewrite 2 concat_V_pp.
+    rewrite ! concat_p_pp.
+    rewrite (ap_compose (f n.+2%nat) (@colim _ B n.+2%nat)).
+    rewrite <- ap_V.
+    rewrite (ap_compose ((f n.+2%nat) o (g n.+1%nat)) (@colim _ B n.+2%nat)).
+    rewrite (ap_homotopic (fun z => (L (S n) z)^)).
+    rewrite 2 ap_pp.
+    rewrite ! concat_pp_p.
+    rewrite <- (ap_pp_p (@colim _ B n.+2%nat)).
+    rewrite <- (ap_compose (g n.+1%nat) (f n.+2%nat)).
+    rewrite <- ap_pp_p.
+    rewrite ! concat_p_pp.
+    rewrite (Lfg_coherence n).
+    rewrite ap_V.
+    rewrite ! concat_pp_p.
+    rewrite concat_V_pp.
+    rewrite inv_V.
+    rewrite concat_p_Vp.
+    rewrite ! concat_p_pp.
+    unfold colimp.
+    rewrite concat_pV.
+    rewrite concat_1p.
+    reflexivity.
+  Defined.
 End Interleaving.
