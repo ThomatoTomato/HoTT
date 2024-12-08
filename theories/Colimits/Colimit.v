@@ -3,6 +3,7 @@ Require Import Diagrams.Diagram.
 Require Import Diagrams.Graph.
 Require Import Diagrams.Cocone.
 Require Import Diagrams.ConstantDiagram.
+Require Import Diagrams.CommutativeSquares.
 Require Import Colimits.Coeq.
 
 Local Open Scope path_scope.
@@ -242,6 +243,33 @@ Definition functor_Colimit_homotopy {G : Graph} {D1 D2 : Diagram G}
   : functor_Colimit m1 == functor_Colimit m2
   := functor_Colimit_half_homotopy h _.
 
+(** Composition of diagram maps commutes with [functor_Colimit_half], provided the first map uses [functor_Colimit]. *)
+Definition functor_Colimit_half_compose {G : Graph} {A B C : Diagram G} (f : DiagramMap A B) (g : DiagramMap B C) {Q} (HQ : Cocone C Q)
+  : functor_Colimit_half (diagram_comp g f) HQ == (functor_Colimit_half g HQ) o (functor_Colimit f).
+Proof.
+  snrapply Colimit_rec_homotopy.
+  - intro i.
+    reflexivity.
+  - intros i j k x; cbn.
+    lhs refine (concat_p1 _).
+    rhs refine (concat_1p _).
+    unfold comm_square_comp.
+    Open Scope long_path_scope.
+    lhs nrapply ((ap_V _ _) @@ 1).
+    lhs nrapply ((inverse2 (ap_pp (HQ j) _ _)) @@ 1).
+    lhs nrapply ((inv_pp _ _) @@ 1).
+    rhs nrapply (ap_compose (Colimit_rec (Colimit B) (cocone_precompose f (cocone_colimit B))) (Colimit_rec Q (cocone_precompose g HQ)) (colimp i j k x)).
+    rhs nrapply (ap _ (Colimit_rec_beta_colimp (Colimit B) (cocone_precompose f (cocone_colimit B)) _ _ _ _)).
+    rhs nrapply ap_pp.
+    rhs nrapply (1 @@ (Colimit_rec_beta_colimp Q (cocone_precompose g HQ) _ _ _ _)).
+    simpl.
+    rhs nrapply concat_p_pp.
+    rhs nrapply ((ap_compose (colim j) _ _)^ @@ 1 @@ 1).
+    rhs nrapply ((ap_V _ (DiagramMap_comm f k x))  @@ (ap_V (HQ j) _) @@ 1).
+    by rhs nrapply ((inverse2 (ap_compose (g j) (HQ j) _)) @@ 1 @@ 1).
+    Close Scope long_path_scope.
+Defined.
+
 (** ** Functoriality of abstract colimits *)
 
 Section FunctorialityColimit.
@@ -392,6 +420,8 @@ Proof.
   apply equiv_diagram_const_cocone.
 Defined.
 
+(** FIXME: These two seem more general. *)
+
 (** The two ways of getting a path [colim ((D _f f) x) = colim ((D _f f) y)] from an path [x = y] are equivalent. *)
 Definition thelemma {G : Graph} {D : Diagram G} {i j : G} (f : G i j) {x y : D i} (p : x = y) 
   : (colimp i j f x) @ (ap (colim i) p) @ (colimp i j f y)^ 
@@ -401,15 +431,15 @@ Proof.
   by rhs apply (ap_homotopic (colimp i j f) p).
 Defined.
 
+(** The two ways of getting a path [colim i x = colim i y] from a path [x = y] are equivalent. *)
 Definition thelemma' {G : Graph} {D : Diagram G} {i j : G} (f : G i j) {x y : D i} (p : x = y)
   : (colimp i j f x)^ @ (ap (colim j) (ap (D _f f) p)) @ (colimp i j f y) = (ap (colim i) p).
 Proof.
-  rewrite (ap_compose (D _f f) (colim j) p)^.
-  Open Scope long_path_scope.
   snrapply (cancelL (colimp i j f x) _ _).
-  rewrite ! concat_p_pp.
-  rewrite concat_pV.
-  rewrite concat_1p.
-  apply (concat_Ap (fun z => colimp i j f z) p).
+  lhs nrapply concat_p_pp.
+  lhs nrapply ((concat_p_pp _ _ _) @@ 1).
+  lhs nrapply ((concat_pV _) @@ 1 @@ 1).
+  lhs nrapply ((concat_1p _) @@ 1).
+  lhs nrapply ((ap_compose (D _f f) (colim j) p)^ @@ 1).
+  nrapply (concat_Ap (fun z => colimp i j f z) p).
 Defined.
-
