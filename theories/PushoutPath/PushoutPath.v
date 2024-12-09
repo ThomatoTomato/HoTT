@@ -229,15 +229,8 @@ Section ZigzagIdentity.
 
   (** The candidate for the identity type. *)
   Definition zigzag_family_half
-    : relation_pushout -> Type.
-  Proof.
-    snrapply Pushout_rec.
-    + exact zigzag_Pinf.
-    + exact zigzag_Qinf.
-    + intros [[a b] r].
-      apply path_universe_uncurried.
-      exact (equiv_zigzag_glueinf r).
-  Defined.
+    : relation_pushout -> Type
+    := induced_fam_pod (Build_poDescent zigzag_Pinf zigzag_Qinf (fun x => equiv_zigzag_glueinf (pr2 x))).
 
   (** Contruct the half-induction principle from Kraus-von Raumer. *)
   Context (P : forall (a : A) (p : zigzag_family_half (pushl a)), Type)
@@ -432,18 +425,17 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
          (ap (inj (zigzag_P a) n.+1%nat)
             (zigzag_gluePQP r n p)^ @ 
           colimpL p)^ (indLp a p)).
-          + (*rhs nrapply (ap (fun z => transport (P a) z (indLp a p)) (inv_pV _ _)). *)
-        rhs nrapply (ap (fun z => transport (P a) z (indLp a p)) _).
-        2: {
-          lhs nrapply inv_pV.
-          lhs nrapply (1 @@ (inverse2 (ap_V _ (zigzag_gluePQP r n p)))).
-          lhs nrapply (1 @@ (inv_V _)); reflexivity.
-        }
-        refine ((transportlemma _ (@colimL a n) (@colimL a (S n)) (fun y => P a y) (pglue ((b ; r), p)) (@colimpL a n p)^ (indLp a p)) @ _).
-        by lhs nrapply (ap (fun z => transport (P a) z (indLp a p)) ((inv_V _) @@ 1)).
-      + change (zigzag_family_half (pushl a)) with (zigzag_Pinf a).
-        nrapply (ap (fun z => transport (P a) z (indLp a p))).
-        nrapply (ap (fun z => z^) (zigzag_comp_eissect r n _))^.
+        + rhs nrapply (ap (fun z => transport (P a) z (indLp a p)) _).
+          2: {
+            lhs nrapply inv_pV.
+            lhs nrapply (1 @@ (inverse2 (ap_V _ (zigzag_gluePQP r n p)))).
+            lhs nrapply (1 @@ (inv_V _)); reflexivity.
+          }
+          refine ((transportlemma _ (@colimL a n) (@colimL a (S n)) (fun y => P a y) (pglue ((b ; r), p)) (@colimpL a n p)^ (indLp a p)) @ _).
+          by lhs nrapply (ap (fun z => transport (P a) z (indLp a p)) ((inv_V _) @@ 1)).
+        + change (zigzag_family_half (pushl a)) with (zigzag_Pinf a).
+          nrapply (ap (fun z => transport (P a) z (indLp a p))).
+          nrapply (ap (fun z => z^) (zigzag_comp_eissect r n _))^.
   Defined.
 
 
@@ -602,3 +594,48 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
       (* Bad: destruct rew. *)
     Admitted.
 End ZigzagIdentity.
+
+Section KvRApplication.
+  (** Conclude by applying Kraus-von Raumer to get an equivalence with the identity types. *)
+
+  Context {A B : Type} (R : A -> B -> Type) (a0 : A) `{Univalence}.
+
+  Let R' := relation_total R.
+  Let f : R' -> A := fst o pr1.
+  Let g : R' -> B := snd o pr1.
+
+  (** Package the data for KvR. *)
+  Local Definition zigzag_poDescent : poDescent f g.
+  Proof.
+    snrapply Build_poDescent.
+    + exact (zigzag_Pinf R a0).
+    + exact (zigzag_Qinf R a0).
+    + intros [[a b] r]; exact (equiv_zigzag_glueinf R a0 r).
+  Defined.
+
+  Local Definition zigzag_based_ind : forall (Qe : poDepDescent zigzag_poDescent) (q0 : podd_faml Qe a0 (zigzag_refl R a0)), poDepDescentSection Qe.
+  Proof.
+    intros Qe q0.
+    Check podd_faml Qe.
+    pose (indL := indL_colim R a0 (podd_faml Qe) (podd_famr Qe) q0 (fun a b r => podd_e Qe ((a , b) ; r))).
+    pose (indR := indR_colim R a0 (podd_faml Qe) (podd_famr Qe) q0 (fun a b r => podd_e Qe ((a , b) ; r))).
+    snrapply Build_poDepDescentSection.
+    - exact indL.
+    - exact indR.
+    - intros [[a b] r] pf; symmetry.
+      snrapply ind_comp_glue.
+  Defined.
+
+  (** Get the equivalence. *)
+  Definition zigzag_equiv_identity (x : Pushout f g) : (pushl a0) = x <~> (zigzag_family_half R a0 x).
+  Proof.
+    snrapply induced_fam_pod_equiv_path.
+    2: exact zigzag_based_ind.
+    intros Qe q0.
+    unfold zigzag_based_ind.
+    simpl podds_sectl.
+    snrapply indL_comp_refl.
+    + exact (podd_famr Qe).
+    + exact (fun a b r => podd_e Qe ((a , b) ; r)).
+  Defined.
+End KvRApplication.
