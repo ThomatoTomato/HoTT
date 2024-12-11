@@ -376,9 +376,9 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
 
 <<
     
-                                                                 (b, r, a', r', p', indL n a p)
+                                                                 (b, r, a', r', p', indL n a p')
 
-   (b : B)x(r : R a b)x(a' : A)x(r' : R a' b)x(p' : a0 ~>n a') -----------------> (b : B)x(r : R a b)x(a' : A)x(r' : R a' b)x(p' : a0 ~>n a')xPn n a' p
+   (b : B)x(r : R a b)x(a' : A)x(r' : R a' b)x(p' : a0 ~>n a') -----------------> (b : B)x(r : R a b)x(a' : A)x(r' : R a' b)x(p' : a0 ~>n a')xPn n a' p'
                  ^                                     \                                                    |
                 / (b, r, a, r, p)                       \ (b, r, gluePQ n r' p')                            |
                /                                         v                         (b, r, q, indR n+1 b q)  |
