@@ -69,6 +69,28 @@ Definition colimp {G : Graph} {D : Diagram G} (i j : G) (f : G i j) (x : D i)
   : colim j (D _f f x) = colim i x
   := (cglue ((i; x); j; f))^.
 
+(** The two ways of getting a path [colim ((D _f f) x) = colim ((D _f f) y)] from an path [x = y] are equivalent. *)
+Definition ap_colim {G : Graph} {D : Diagram G} {i j : G} (f : G i j) {x y : D i} (p : x = y) 
+  : (colimp i j f x) @ (ap (colim i) p) @ (colimp i j f y)^ 
+    = (ap (colim j) (ap (D _f f) p)).
+Proof.
+  rhs apply (ap_compose (D _f f) (colim j) p)^.
+  by rhs apply (ap_homotopic (colimp i j f) p).
+Defined.
+
+(** The two ways of getting a path [colim i x = colim i y] from a path [x = y] are equivalent. *)
+Definition ap_colim' {G : Graph} {D : Diagram G} {i j : G} (f : G i j) {x y : D i} (p : x = y)
+  : (colimp i j f x)^ @ (ap (colim j) (ap (D _f f) p)) @ (colimp i j f y) = (ap (colim i) p).
+Proof.
+  snrapply (cancelL (colimp i j f x) _ _).
+  lhs nrapply concat_p_pp.
+  lhs nrapply ((concat_p_pp _ _ _) @@ 1).
+  lhs nrapply ((concat_pV _) @@ 1 @@ 1).
+  lhs nrapply ((concat_1p _) @@ 1).
+  lhs nrapply ((ap_compose (D _f f) (colim j) p)^ @@ 1).
+  nrapply (concat_Ap (fun z => colimp i j f z) p).
+Defined.
+
 Definition Colimit_ind {G : Graph} {D : Diagram G} (P : Colimit D -> Type)
 (q : forall i x, P (colim i x))
 (pp_q : forall (i j : G) (g: G i j) (x : D i),
@@ -418,28 +440,4 @@ Proof.
   symmetry.
   refine (equiv_colimit_rec C oE _).
   apply equiv_diagram_const_cocone.
-Defined.
-
-(** FIXME: These two seem more general. *)
-
-(** The two ways of getting a path [colim ((D _f f) x) = colim ((D _f f) y)] from an path [x = y] are equivalent. *)
-Definition thelemma {G : Graph} {D : Diagram G} {i j : G} (f : G i j) {x y : D i} (p : x = y) 
-  : (colimp i j f x) @ (ap (colim i) p) @ (colimp i j f y)^ 
-    = (ap (colim j) (ap (D _f f) p)).
-Proof.
-  rhs apply (ap_compose (D _f f) (colim j) p)^.
-  by rhs apply (ap_homotopic (colimp i j f) p).
-Defined.
-
-(** The two ways of getting a path [colim i x = colim i y] from a path [x = y] are equivalent. *)
-Definition thelemma' {G : Graph} {D : Diagram G} {i j : G} (f : G i j) {x y : D i} (p : x = y)
-  : (colimp i j f x)^ @ (ap (colim j) (ap (D _f f) p)) @ (colimp i j f y) = (ap (colim i) p).
-Proof.
-  snrapply (cancelL (colimp i j f x) _ _).
-  lhs nrapply concat_p_pp.
-  lhs nrapply ((concat_p_pp _ _ _) @@ 1).
-  lhs nrapply ((concat_pV _) @@ 1 @@ 1).
-  lhs nrapply ((concat_1p _) @@ 1).
-  lhs nrapply ((ap_compose (D _f f) (colim j) p)^ @@ 1).
-  nrapply (concat_Ap (fun z => colimp i j f z) p).
 Defined.

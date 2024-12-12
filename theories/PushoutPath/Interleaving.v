@@ -366,7 +366,7 @@ Proof.
     rewrite <- (ap_V (fun x0 : B i.+2%nat => inj A i.+2%nat (g i.+1%nat x0)) _).
     rewrite <- (ap_V (fun x0  => inj A i.+3%nat (g i.+1%nat x0) ^+) (DiagramMap_comm f idpath x)).
     rewrite ap_compose.
-    rewrite (@thelemma _ A i.+2%nat i.+3%nat idpath _ _ (ap (g i.+1%nat) (DiagramMap_comm f idpath x)^)).
+    rewrite (@ap_colim _ A i.+2%nat i.+3%nat idpath _ _ (ap (g i.+1%nat) (DiagramMap_comm f idpath x)^)).
     Close Scope long_path_scope.
     rewrite !ap_V.
     apply (ap (fun p => p^)).
@@ -509,7 +509,7 @@ Section Interleaving.
       apply (ap (fun z => z @ (colimp n (S n) idpath x))).
       rewrite <- (inv_V (cglue _)).
       rewrite <- 3 ap_V.
-      snrapply (@thelemma' _ B _ _ idpath (f n.+1 (g n x)) (x^+) (L n x)^).
+      snrapply (@ap_colim' _ B _ _ idpath (f n.+1 (g n x)) (x^+) (L n x)^).
       Close Scope long_path_scope.
   Defined.
 
@@ -547,7 +547,7 @@ Section Interleaving.
     simpl functor_Colimit_half_compose.
     simpl functor_Colimit_half_homotopy.
     simpl Colimit_succ_map_is_idmap.
-    by lhs nrapply concat_1p.
+    nrapply concat_1p.
   Defined.
 
   Definition zigzag_comp_eissect (b : B n) : (eissect equiv_zigzag_glue (@colim _ B n b)) = (ap (@colim _ B n.+1%nat) (L n b)^) @ (@colimp _ B n _ _ b).

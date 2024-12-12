@@ -398,12 +398,11 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
             lhs nrapply (1 @@ (inv_V _)); reflexivity.
           }
           refine ((transportlemma _ (@colimL a n) (@colimL a (S n)) (fun y => P a y) (pglue ((b ; r), p)) (@colimpL a n p)^ (indLp a p)) @ _).
-          by lhs nrapply (ap (fun z => transport (P a) z (indLp a p)) ((inv_V _) @@ 1)).
+          nrapply (ap (fun z => transport (P a) z (indLp a p)) ((inv_V _) @@ 1)).
         + change (zigzag_family_half (pushl a)) with (zigzag_Pinf a).
           nrapply (ap (fun z => transport (P a) z (indLp a p))).
           nrapply (ap (fun z => z^) (zigzag_comp_eissect r n _))^.
   Defined.
-
 
   (** FIXME: Reprove once [indL_step] is cleaned up. *)
   Local Definition indR_step (n : nat) (b : B) (indRp : indRn (S n))
@@ -515,7 +514,7 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
     - intros n _ [] pn.
       unfold indL_seq; simpl.
       lhs nrapply (transport_pp _ _ _ _)^.
-      by lhs nrapply (ap (fun z => transport (P a) z _) (concat_Vp _)).
+      nrapply (ap (fun z => transport (P a) z _) (concat_Vp _)).
   Defined.
 
   (** The right maps descend to the colimit. *)
@@ -529,7 +528,7 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
       + destruct qn.
       + unfold indR_seq; simpl.
         lhs nrapply (transport_pp _ _ _ _)^.
-        by lhs nrapply (ap (fun z => transport (Q b) z _) (concat_Vp _)).
+        nrapply (ap (fun z => transport (Q b) z _) (concat_Vp _)).
   Defined.
 
   (** The left colimit map computes on reflexivity. *)
@@ -563,9 +562,7 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
       simpl.
       unfold zigzag_glueQPQ.
       unfold ind_pushcQ.
-      simpl.
-
-      (*
+      simpl. *)
     Admitted.
 End ZigzagIdentity.
 
