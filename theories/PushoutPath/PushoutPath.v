@@ -11,40 +11,6 @@ Require Import Graph.
 Require Import Types.
 Require Import PushoutPath.Interleaving.
 
-(** FIXME: Move this somewhere else. *)
-Section InverseEquivCoh.
-
-  (** Given type families [P : A -> Type], [Q : B -> Type], an equivalence [e : A <~> B], and a family of equivalences [f : forall (a : A), P a <~> Q (e a)], we get a family of equivalences [finv : forall (b : B), Q b <~> P (e^-1 b)] and some results about compositions of [f] and [finv]. *)
-
-  Context {A B : Type} {P : A -> Type} {Q : B -> Type} (e : A <~> B) (f : forall (a : A), P a <~> Q (e a)).
-
-  Definition finv : forall (b : B), Q b <~> P (e^-1 b).
-  Proof.
-    intro b.
-    transitivity (Q (e (e^-1 b))).
-    - snrapply equiv_transport.
-      exact (eisretr e b)^.
-    - symmetry.
-      exact (f (e^-1 b)).
-  Defined.
-
-  Definition finv_f : forall (a : A), (finv (e a)) o (f a) == transport (fun y => P y) (eissect e a)^.
-  Proof.
-    intros a x.
-    simpl.
-    lhs nrapply (ap (fun z => (f (e^-1 (e a)))^-1 (transport Q z^ (f a x))) (eisadj e a)).
-    nrapply (moveR_equiv_V' (f (e^-1 (e a)))).
-    lhs nrapply (ap (fun z => transport Q z (f a x)) (ap_V e _)^).
-    by destruct (eissect e a)^.
-  Defined.
-
-  Definition f_finv : forall (b : B), (f (e^-1 b)) o (finv b) == transport (fun y => Q y) (eisretr e b)^.
-  Proof.
-    intros b x.
-    by nrapply (moveR_equiv_M' (f (e^-1 b))).
-  Defined.
-End InverseEquivCoh.
-
 (** * Work towards characterizing the path types in a pushout of a span [R : A -> B -> Type]. The goal here is to work in half-steps, so that each construction only happens once. [C] will be used to denote a type that might be [A] or [B].  We think of a term of [Family C] as being the family [fun c => a0 squiggle_t c]. *)
 Definition Family (C : Type) := C -> Type.
 
@@ -583,15 +549,23 @@ We don't care about the bottom left map (which is [indL n a] followed by [transp
       lhs nrapply (transport_paths_FlFr_D (f:=fun z => indR_colim b (_ r z))).
       Open Scope long_path_scope.
       rewrite concat_p1.
+      generalize (colimp n (S n) idpath pn).
+      generalize (pn^+).
+      (*
+      hott_simpl.
       rewrite apD_compose.
       unfold zigzag_gluePQinf.
       unfold equiv_zigzag_glueinf.
       simpl.
       unfold zigzag_glue_map_inv_inf.
-      (* Bad: rewrite (functor_Colimit_half_beta_colimp (zigzag_glue_map_inv (zigzag_glueQP r) (zigzag_gluePQ r) (zigzag_glueQPQ r) (zigzag_gluePQP r)) (Colimit_succ _) n (S n) idpath pn). *)
       pose (rew := (functor_Colimit_half_beta_colimp (zigzag_glue_map_inv (zigzag_glueQP r) (zigzag_gluePQ r) (zigzag_glueQPQ r) (zigzag_gluePQP r)) (Colimit_succ _) n (S n) idpath pn)).
       rewrite (apD02 (indR_colim b) rew).
-      (* Bad: destruct rew. *)
+      simpl.
+      unfold zigzag_glueQPQ.
+      unfold ind_pushcQ.
+      simpl.
+
+      (*
     Admitted.
 End ZigzagIdentity.
 

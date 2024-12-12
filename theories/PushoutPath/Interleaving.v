@@ -618,3 +618,36 @@ Section Interleaving.
     reflexivity.
   Defined.
 End Interleaving.
+
+Section InverseEquivCoh.
+
+  (** Given type families [P : A -> Type], [Q : B -> Type], an equivalence [e : A <~> B], and a family of equivalences [f : forall (a : A), P a <~> Q (e a)], we get a family of equivalences [finv : forall (b : B), Q b <~> P (e^-1 b)] and some results about compositions of [f] and [finv]. *)
+
+  Context {A B : Type} {P : A -> Type} {Q : B -> Type} (e : A <~> B) (f : forall (a : A), P a <~> Q (e a)).
+
+  Definition finv : forall (b : B), Q b <~> P (e^-1 b).
+  Proof.
+    intro b.
+    transitivity (Q (e (e^-1 b))).
+    - snrapply equiv_transport.
+      exact (eisretr e b)^.
+    - symmetry.
+      exact (f (e^-1 b)).
+  Defined.
+
+  Definition finv_f : forall (a : A), (finv (e a)) o (f a) == transport (fun y => P y) (eissect e a)^.
+  Proof.
+    intros a x.
+    simpl.
+    lhs nrapply (ap (fun z => (f (e^-1 (e a)))^-1 (transport Q z^ (f a x))) (eisadj e a)).
+    nrapply (moveR_equiv_V' (f (e^-1 (e a)))).
+    lhs nrapply (ap (fun z => transport Q z (f a x)) (ap_V e _)^).
+    by destruct (eissect e a)^.
+  Defined.
+
+  Definition f_finv : forall (b : B), (f (e^-1 b)) o (finv b) == transport (fun y => Q y) (eisretr e b)^.
+  Proof.
+    intros b x.
+    by nrapply (moveR_equiv_M' (f (e^-1 b))).
+  Defined.
+End InverseEquivCoh.
