@@ -629,3 +629,50 @@ Proof.
     + intros n m p a; snrapply path_ishprop; snrapply istrunc_forall.
       intro x; srapply ishprop_istrunc.
 Defined.
+
+(** From a sequence [A], we can produce a diagram map from [A] to [succ_seq A]. It's the map that applies the arrow in the sequence to every element. *)
+Definition seq_to_succ_seq (A : Sequence) : DiagramMap A (succ_seq A).
+Proof.
+  snrapply Build_DiagramMap.
+  - intros n a. exact a^+. 
+  - intros m n [] x. reflexivity.
+Defined.
+
+Section ColimitSucc.
+  Context (A : Sequence).
+
+  (** The any cocone over [A] gives a cocone over [succ_seq A]. *)
+  Definition Cocone_succ {Q} (HQ : Cocone A Q) : Cocone (succ_seq A) Q.
+  Proof.
+    snrapply Build_Cocone.
+    - intros i x.
+      exact (HQ (S i) x).
+    - intros i _ [] x.
+      exact (legs_comm HQ (S i) (S (S i)) idpath x).
+  Defined.
+
+  (** The specific case of the HIT colimit. *)
+  Definition Colimit_succ : Cocone (succ_seq A) (Colimit A)
+    := Cocone_succ (cocone_colimit A).
+
+  (** The successor endomorphism for the HIT colimit. *)
+  Definition Colimit_succ_map : Colimit A -> Colimit A
+    := functor_Colimit_half (seq_to_succ_seq A) (Colimit_succ).
+
+  (** The successor map is homotopic to the identity map. *)
+  Definition Colimit_succ_map_is_idmap : Colimit_succ_map == idmap.
+  Proof.
+    snrapply Colimit_rec_homotopy.
+    - intros i x; cbn.
+      apply colimp.
+    - intros m _ [] x; cbn.
+      nrefine (_ @@ _).
+      + apply concat_1p.
+      + symmetry; apply ap_idmap.
+  Defined.
+End ColimitSucc.
+
+(** The HIT colimit isn't a colimit of the successor sequence without [Funext], but we can use [Colimit_rec] to get maps out of it. *)
+Definition functor_Colimit_succ_half {A B : Sequence} (m : DiagramMap (succ_seq A) B) {Q} (HQ : Cocone B Q)
+  : Colimit A -> Q
+  := functor_Colimit_half (diagram_comp m (seq_to_succ_seq A)) HQ.
