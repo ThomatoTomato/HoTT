@@ -196,7 +196,7 @@ Section ZigzagIdentity.
   (** The candidate for the identity type. *)
   Definition zigzag_family_half
     : relation_pushout -> Type
-    := induced_fam_pod (Build_poDescent zigzag_Pinf zigzag_Qinf (fun x => equiv_zigzag_glueinf (pr2 x))).
+    := fam_podescent (Build_poDescent _ _ _ _ _ zigzag_Pinf zigzag_Qinf (fun x => equiv_zigzag_glueinf (pr2 x))).
 
   (** Contruct the half-induction principle from Kraus-von Raumer. *)
   Context (P : forall (a : A) (p : zigzag_family_half (pushl a)), Type)
@@ -600,7 +600,7 @@ Section KvRApplication.
   (** Get the equivalence. *)
   Definition zigzag_equiv_identity (x : Pushout f g) : (pushl a0) = x <~> (zigzag_family_half R a0 x).
   Proof.
-    snrapply induced_fam_pod_equiv_path.
+    snrapply fam_podescent_equiv_path.
     2: exact zigzag_based_ind.
     intros Qe q0.
     unfold zigzag_based_ind.
