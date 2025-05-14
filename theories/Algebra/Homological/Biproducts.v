@@ -28,81 +28,11 @@ Section Biproducts.
   Definition cat_biprod : A
     := cat_prod I x.
 
-  (* I have tried to change the priority of this instance, but that does not unhalt the functions below. *)
   #[export] Instance cat_biprod_coprod : Coproduct I x
     := cat_coprod_equiv_coprod _ cat_biprod cate_coprod_prod.
-
-  Definition cat_biprod_in' (i : I) : x i $-> cat_biprod
-    := cat_in i.
-
-  Definition cat_biprod_rec' {z : A} (f : forall i, x i $-> z)
-    : cat_biprod $-> z
-    := cat_coprod_rec I f.
-
-  Definition cat_biprod_rec_beta' {z : A} (f : forall i, x i $-> z)
-    : forall i, (cat_coprod_rec I f) $o cat_in i $== f i
-    := cat_coprod_beta _ _.
-
-  (* Definition cat_biprod_rec_eta'' {z : A} (f : cat_biprod $-> z) : Unit.
-  Proof.
-    Compute (cat_coprod_rec I (fun i => f $o cat_in i)).
-    Check f.
-    : cat_coprod_rec I (fun i => f $o cat_in (H0 := cat_biprod_coprod _) i) $== f.
-    := cat_coprod_eta _ _. *)
-
-  Definition cat_biprod_rec_eta''' {z : A} {f f' : forall i, x i $-> z}
-    : (forall i, f i $== f' i) -> cat_coprod_rec I f $== cat_coprod_rec I f'
-    := cat_coprod_rec_eta _.
-
-  (* Definition cat_biprod_in_eta' {z : A} {f f' : cat_biprod $-> z}
-    : (forall i, f $o cat_in (H0 := cat_biprod_coprod _) i $== f' $o cat_in (H0 := cat_biprod_coprod _) i) -> f $== f'
-    := cat_coprod_in_eta _. *)
-
-  Definition cat_biprod_in (i : I) : x i $-> cat_biprod
-    := cate_coprod_prod $o cat_in i.
-
-  Definition cat_biprod_rec {z : A} (f : forall i, x i $-> z) : cat_biprod $-> z
-    := cat_coprod_rec I f $o cate_coprod_prod^-1$.
-
-  Definition cat_biprod_rec_beta {z : A} (f : forall i, x i $-> z) (i : I)
-    : cat_biprod_rec f $o cat_biprod_in i $== f i.
-  Proof.
-    unfold cat_biprod_rec, cat_biprod_in.
-    lhs' napply cat_assoc.
-    lhs' napply (_ $@L compose_V_hh _ _).
-    napply cat_coprod_beta.
-  Defined.
-
-  Definition cat_biprod_rec_eta {z : A} (f : cat_biprod $-> z)
-    : cat_biprod_rec (fun i => f $o cat_biprod_in i) $== f.
-  Proof.
-    unfold cat_biprod_rec, cat_biprod_in.
-    napply cate_moveR_eV.
-    lhs' napply (cat_coprod_rec_eta _ (fun i => cat_assoc_opp _ _ _)).
-    napply cat_coprod_eta.
-  Defined.
-
-  Definition cat_biprod_rec_eta' {z : A} {f f' : forall i, x i $-> z} (p : forall i, f i $== f' i)
-    : cat_biprod_rec f $== cat_biprod_rec f'.
-  Proof.
-    unfold cat_biprod_rec.
-    exact (cat_coprod_rec_eta I p $@R _).
-  Defined.
-
-  Definition cat_biprod_in_eta {z : A} {f f' : cat_biprod $-> z}
-    (p : forall i, f $o cat_biprod_in i $== f' $o cat_biprod_in i)
-    : f $== f'.
-  Proof.
-    napply (cate_epic_equiv cate_coprod_prod).
-    napply cat_coprod_in_eta.
-    intros i.
-    exact (cat_assoc _ _ _ $@ p i $@ cat_assoc_opp _ _ _). (* Is there a tactic to do "conjugation" like this? *)
-  Defined.
-
 End Biproducts.
 
 Arguments cat_biprod I {A} x {_ _ _ _ _ _ _ _}.
-(* Arguments cat_biprod_in {I A x _ _ _ _ _ _ _ _} i. *)
 Arguments cate_coprod_prod {I A} x {_ _ _ _ _ _ _ _}.
 
 (** A smart constructor for biproducts. *)
@@ -167,7 +97,7 @@ Defined.
 (** An inclusion followed by a projection of a different index is zero. *)
 Definition cat_biprod_pr_in_ne (I : Type) {A : Type} (x : I -> A)
   `{Biproduct I A x} {i j : I} (p : i <> j)
-  : cat_pr j $o (cat_in (H0 := cat_biprod_coprod _) i) $== zero_morphism. (* Also something awkward here. *)
+  : cat_pr j $o (cat_in i) $== zero_morphism.
 Proof.
   unfold cat_in.
   lhs' refine (_ $@L _).
@@ -196,7 +126,7 @@ Proof.
   napply cat_prod_pr_eta.
   intros i.
   lhs' napply cat_prod_beta.
-  napply (cat_coprod_in_eta I (H0 := cat_biprod_coprod _)). (* Don't know how to make typeclass search infer this. Yes, I've tried everything, its not the napply that is the problem. *)
+  napply (cat_coprod_in_eta I (H0 := cat_biprod_coprod _)). (* Don't know why this needs [H0] specified. In Coq-LSP i get a goal request error. *)
   intros j.
   rhs' napply cat_assoc.
   rhs' napply (_ $@L (cat_coprod_beta _ _ _)).
@@ -372,13 +302,13 @@ Section BinaryBiproducts.
     - exact q.
   Defined.
 
-  Definition cat_binbiprod_inl : x $-> cat_binbiprod := cat_biprod_in _ true.
-  Definition cat_binbiprod_inr : y $-> cat_binbiprod := cat_biprod_in _ false.
+  Definition cat_binbiprod_inl : x $-> cat_binbiprod := cat_in true.
+  Definition cat_binbiprod_inr : y $-> cat_binbiprod := cat_in false.
 
   Definition cat_binbiprod_rec {z : A} (f : x $-> z) (g : y $-> z)
     : cat_binbiprod $-> z.
   Proof.
-    napply cat_biprod_rec.
+    tapply cat_coprod_rec.
     intros [|].
     - exact f.
     - exact g.
@@ -395,7 +325,7 @@ Section BinaryBiproducts.
   Definition cat_binbiprod_rec_eta {z : A} (f : cat_binbiprod $-> z)
     : cat_binbiprod_rec (f $o cat_binbiprod_inl) (f $o cat_binbiprod_inr) $== f.
   Proof.
-    napply cat_biprod_in_eta.
+    tapply cat_coprod_in_eta.
     intros [|].
     - exact (cat_binbiprod_rec_beta_inl _ _).
     - exact (cat_binbiprod_rec_beta_inr _ _).
@@ -406,7 +336,7 @@ Section BinaryBiproducts.
       -> cat_binbiprod_rec f g $== cat_binbiprod_rec f' g'.
   Proof.
     intros p q.
-    napply cat_biprod_rec_eta'.
+    napply cat_coprod_rec_eta.
     intros [|].
     - exact p.
     - exact q.
@@ -418,7 +348,7 @@ Section BinaryBiproducts.
       -> f $== f'.
   Proof.
     intros p q.
-    napply cat_biprod_in_eta.
+    tapply cat_coprod_in_eta.
     intros [|].
     - exact p.
     - exact q.
@@ -497,7 +427,7 @@ Proof.
   nrefine (_ $@ _ $@ _).
   2: snapply cat_biprod_corec_rec; by intros [|].
   1: snapply cat_prod_corec_eta; by intros [|].
-  snapply cat_biprod_rec_eta'; by intros [|].
+  snapply cat_coprod_rec_eta; by intros [|].
 Defined.
 
 (** *** Binary biproduct bifunctor *)
